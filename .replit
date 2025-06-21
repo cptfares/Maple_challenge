@@ -1,0 +1,33 @@
+modules = ["python-3.11"]
+
+[nix]
+channel = "stable-24_05"
+packages = ["cargo", "gitFull", "libiconv", "libxcrypt", "playwright-driver", "rustc"]
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "FastAPI Server"
+
+[[workflows.workflow]]
+name = "FastAPI Server"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "uv add fastapi uvicorn playwright beautifulsoup4 tiktoken numpy faiss-cpu && playwright install chromium && python main.py"
+waitForPort = 8000
+
+[deployment]
+run = ["sh", "-c", "uv add fastapi uvicorn playwright beautifulsoup4 tiktoken numpy faiss-cpu && playwright install chromium && python main.py"]
+
+[[ports]]
+localPort = 8000
+externalPort = 80

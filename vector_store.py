@@ -1,0 +1,97 @@
+import numpy as np
+import faiss
+import logging
+from typing import List, Dict, Any, Optional
+
+logger = logging.getLogger(__name__)
+
+class VectorStore:
+    def __init__(self):
+        """Initialize FAISS vector store"""
+        self.index: Optional[faiss.Index] = None
+        self.chunks: List[Dict[str, Any]] = []
+        self.dimension = 1536  # OpenAI text-embedding-3-small dimension
+        
+    def _create_index(self):
+        """Create a new FAISS index"""
+        # Use L2 (Euclidean) distance for similarity
+        self.index = faiss.IndexFlatL2(self.dimension)
+        logger.info(f"Created FAISS index with dimension {self.dimension}")
+    
+    def add_embeddings(self, embeddings: List[List[float]], chunks: List[Dict[str, Any]]):
+        """
+        Add embeddings and their corresponding chunks to the vector store.
+        
+        Args:
+            embeddings: List of embedding vectors
+            chunks: List of chunk metadata corresponding to embeddings
+        """
+        if len(embeddings) != len(chunks):
+            raise ValueError("Number of embeddings must match number of chunks")
+        
+        if not embeddings:
+            logger.warning("No embeddings to add")
+            return
+        
+        # Create index if it doesn't exist
+        if self.index is None:
+            self._create_index()
+        
+        # Convert embeddings to numpy array
+        embeddings_array = np.array(embeddings, dtype=np.float32)
+        
+        # Add to FAISS index
+        self.index.add(embeddings_array)
+        
+        # Store chunk metadata
+        self.chunks.extend(chunks)
+        
+        logger.info(f"Added {len(embeddings)} embeddings to vector store. Total: {len(self.chunks)}")
+    
+    def search(self, query_embedding: List[float], top_k: int = 5) -> List[Dict[str, Any]]:
+        """
+        Search for similar chunks using the query embedding.
+        
+        Args:
+            query_embedding: The query embedding vector
+            top_k: Number of top results to return
+            
+        Returns:
+            List of chunks with similarity scores
+        """
+        if self.index is None or len(self.chunks) == 0:
+            logger.warning("Vector store is empty")
+            return []
+        
+        # Convert query to numpy array
+        query_array = np.array([query_embedding], dtype=np.float32)
+        
+        # Search in FAISS index
+        top_k = min(top_k, len(self.chunks))  # Don't search for more than available
+        distances, indices = self.index.search(query_array, top_k)
+        
+        # Prepare results with similarity scores
+        results = []
+        for i, (distance, idx) in enumerate(zip(distances[0], indices[0])):
+            if idx < len(self.chunks):  # Ensure valid index
+                chunk = self.chunks[idx].copy()
+                chunk['similarity_score'] = float(distance)  # Lower distance = higher similarity
+                chunk['rank'] = i + 1
+                results.append(chunk)
+        
+        logger.info(f"Found {len(results)} similar chunks")
+        return results
+    
+    def clear_store(self):
+        """Clear all data from the vector store"""
+        self.index = None
+        self.chunks = []
+        logger.info("Vector store cleared")
+    
+    def get_size(self) -> int:
+        """Get the number of stored chunks"""
+        return len(self.chunks)
+    
+    def is_empty(self) -> bool:
+        """Check if the vector store is empty"""
+        return len(self.chunks) == 0
