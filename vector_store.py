@@ -48,13 +48,15 @@ class VectorStore:
         
         logger.info(f"Added {len(embeddings)} embeddings to vector store. Total: {len(self.chunks)}")
     
-    def search(self, query_embedding: List[float], top_k: int = 5) -> List[Dict[str, Any]]:
+    def search(self, query_embedding: List[float], top_k: int = 5, content_type_filter: str = None, domain_filter: str = None) -> List[Dict[str, Any]]:
         """
-        Search for similar chunks using the query embedding.
+        Search for similar chunks with enhanced filtering options.
         
         Args:
             query_embedding: The query embedding vector
             top_k: Number of top results to return
+            content_type_filter: Filter by content type (text, json, image)
+            domain_filter: Filter by specific domain
             
         Returns:
             List of chunks with similarity scores

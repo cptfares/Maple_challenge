@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import VoiceChat from './VoiceChat.jsx';
 
 const API_BASE = '/api';
@@ -14,6 +14,8 @@ function App() {
   const [messages, setMessages] = useState([]);
   const [question, setQuestion] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
+  const [scrapedSites, setScrapedSites] = useState(null);
+  const [selectedDomain, setSelectedDomain] = useState('all');
 
   const handleScrape = async (e) => {
     e.preventDefault();
@@ -157,6 +159,20 @@ function App() {
     }
   };
 
+  // Fetch scraped sites on component mount
+  useEffect(() => {
+    const fetchSites = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/sites`);
+        const data = await response.json();
+        setScrapedSites(data);
+      } catch (error) {
+        console.error('Error fetching sites:', error);
+      }
+    };
+    fetchSites();
+  }, []);
+
   return (
     <div className="app">
       <header className="header">
@@ -240,7 +256,7 @@ function App() {
                       className="mode-btn chat-btn"
                     >
                       💬 Chat Mode
-                      <span>Ask questions about the content</span>
+                      <span>Ask questions about content and structure</span>
                     </button>
                     <button
                       onClick={() => setCurrentMode('voice')}
@@ -314,7 +330,7 @@ function App() {
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="Ask a question about the website content..."
+                  placeholder="Ask about content, structure, or relationships..."
                   className="chat-input"
                   disabled={isChatLoading}
                   rows="1"

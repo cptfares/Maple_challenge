@@ -29,16 +29,18 @@ class TextChunker:
         sentences = re.split(r'(?<=[.!?])\s+', text)
         return [s.strip() for s in sentences if s.strip()]
     
-    def chunk_text(self, text: str, source_url: str) -> List[Dict[str, Any]]:
+    def chunk_text(self, text: str, source_url: str, content_type: str = 'text', metadata: Dict[str, Any] = None) -> List[Dict[str, Any]]:
         """
-        Split text into chunks with token limits and overlap.
+        Split text into chunks with enhanced metadata support.
         
         Args:
             text: The text to chunk
             source_url: The source URL for reference
+            content_type: Type of content (text, json, image, etc.)
+            metadata: Additional metadata about the content
             
         Returns:
-            List of chunk dictionaries with text, tokens, url, and chunk_id
+            List of chunk dictionaries with enhanced metadata
         """
         if not text or not text.strip():
             return []
