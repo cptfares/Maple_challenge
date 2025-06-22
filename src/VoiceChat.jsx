@@ -67,33 +67,40 @@ const VoiceChat = ({ onBack, scrapedData }) => {
       });
       
       livekitRoom.on('trackSubscribed', (track, publication, participant) => {
-        if (track.kind === Track.Kind.Audio && participant.identity === 'assistant') {
+        console.log('Track subscribed:', track.kind, participant.identity);
+        
+        if (track.kind === Track.Kind.Audio) {
           const audioElement = track.attach();
+          audioElement.autoplay = true;
+          audioElement.volume = 1.0;
+          
           if (audioRef.current) {
+            // Clear previous audio elements
+            audioRef.current.innerHTML = '';
             audioRef.current.appendChild(audioElement);
           }
-          setIsListening(true);
-          setTimeout(() => setIsListening(false), 3000); // Visual feedback
+          
+          // Show visual feedback when assistant speaks
+          if (participant.identity !== 'user') {
+            setIsListening(true);
+            setTimeout(() => setIsListening(false), 3000);
+          }
+          
+          console.log('Audio element attached and configured');
         }
       });
 
       livekitRoom.on('dataReceived', (payload, participant) => {
         try {
           const data = JSON.parse(new TextDecoder().decode(payload));
-          if (data.type === 'transcript' && data.text) {
-            if (data.speaker === 'user') {
-              setConversation(prev => [...prev, {
-                id: Date.now(),
-                type: 'user',
-                message: data.text
-              }]);
-            } else if (data.speaker === 'assistant') {
-              setConversation(prev => [...prev, {
-                id: Date.now(),
-                type: 'assistant',
-                message: data.text
-              }]);
-            }
+          console.log('Data received:', data);
+          
+          if (data.type === 'assistant_response' && data.text) {
+            setConversation(prev => [...prev, {
+              id: Date.now(),
+              type: 'assistant',
+              message: data.text
+            }]);
           }
         } catch (e) {
           console.error('Error parsing data:', e);
@@ -120,24 +127,47 @@ const VoiceChat = ({ onBack, scrapedData }) => {
           }]);
 
           // Send message to agent via data channel
-          const message = JSON.stringify({
-            type: 'text_message',
-            text: transcript
-          });
-          await livekitRoom.localParticipant.publishData(new TextEncoder().encode(message));
+          try {
+            const message = JSON.stringify({
+              type: 'text_message',
+              text: transcript
+            });
+            await livekitRoom.localParticipant.publishData(new TextEncoder().encode(message));
+            console.log('Message sent to agent:', transcript);
+          } catch (error) {
+            console.error('Error sending message:', error);
+          }
         };
 
         recognition.onerror = (event) => {
           console.error('Speech recognition error:', event.error);
         };
 
+        recognition.onstart = () => {
+          console.log('Speech recognition started');
+        };
+
+        recognition.onend = () => {
+          console.log('Speech recognition ended, restarting...');
+          if (isConnected && !isMuted) {
+            try {
+              recognition.start();
+            } catch (error) {
+              console.error('Error restarting recognition:', error);
+            }
+          }
+        };
+
         // Start recognition
         try {
           recognition.start();
-          console.log('Speech recognition started');
+          console.log('Starting speech recognition...');
         } catch (error) {
           console.error('Failed to start speech recognition:', error);
         }
+        
+        // Store recognition for cleanup
+        roomRef.current.recognition = recognition;
       }
 
       // Connect with token
@@ -172,6 +202,12 @@ const VoiceChat = ({ onBack, scrapedData }) => {
   const disconnectFromVoiceChat = async () => {
     if (roomRef.current) {
       const roomName = roomRef.current.name;
+      
+      // Stop speech recognition
+      if (roomRef.current.recognition) {
+        roomRef.current.recognition.stop();
+      }
+      
       roomRef.current.disconnect();
       roomRef.current = null;
       setRoom(null);
@@ -195,6 +231,21 @@ const VoiceChat = ({ onBack, scrapedData }) => {
       if (audioTrack) {
         await audioTrack.setMuted(!isMuted);
         setIsMuted(!isMuted);
+        
+        // Also control speech recognition
+        if (roomRef.current && roomRef.current.recognition) {
+          if (!isMuted) {
+            // About to mute - stop recognition
+            roomRef.current.recognition.stop();
+          } else {
+            // About to unmute - start recognition
+            try {
+              roomRef.current.recognition.start();
+            } catch (error) {
+              console.error('Error starting recognition after unmute:', error);
+            }
+          }
+        }
       }
     }
   };
@@ -322,7 +373,23 @@ const VoiceChat = ({ onBack, scrapedData }) => {
       </div>
       
       {/* Audio playback element for assistant voice */}
-      <div ref={audioRef} style={{ display: 'none' }}></div>
+      <div ref={audioRef} style={{ display: 'none' }} className="audio-container"></div>
+      
+      {/* Debug info in development */}
+      {process.env.NODE_ENV === 'development' && (
+        <div style={{ 
+          position: 'fixed', 
+          bottom: '10px', 
+          right: '10px', 
+          background: 'rgba(0,0,0,0.8)', 
+          color: 'white', 
+          padding: '5px', 
+          fontSize: '12px',
+          borderRadius: '4px'
+        }}>
+          Status: {connectionStatus} | Listening: {isListening ? 'Yes' : 'No'}
+        </div>
+      )}
     </div>
   );
 };

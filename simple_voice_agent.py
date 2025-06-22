@@ -110,22 +110,35 @@ async def entrypoint(ctx: JobContext):
         response = await bot_instance.generate_response(message_text)
         logger.info(f"Generated response: {response}")
         
-        # Convert to speech
+        # Send response back as text first (for conversation display)
+        response_data = json.dumps({
+            "type": "assistant_response", 
+            "text": response
+        })
+        await room.local_participant.publish_data(response_data.encode())
+        
+        # Convert to speech and play
         try:
-            audio_data = await tts.synthesize(response)
-            
-            # Create audio track
+            # Create audio track first
             audio_source = rtc.AudioSource(sample_rate=24000, num_channels=1)
             audio_track = rtc.LocalAudioTrack.create_audio_track("assistant_voice", audio_source)
             
-            # Publish the track
-            await room.local_participant.publish_track(audio_track)
+            # Publish the audio track
+            publication = await room.local_participant.publish_track(audio_track, rtc.TrackPublishOptions())
+            logger.info(f"Published audio track: {publication.sid}")
             
-            # Stream the audio data
-            await audio_source.capture_frame(audio_data)
+            # Generate audio and stream it
+            audio_stream = tts.synthesize(response)
             
+            async for audio_frame in audio_stream:
+                await audio_source.capture_frame(audio_frame)
+                
+            logger.info("Audio streaming completed")
+                
         except Exception as e:
-            logger.error(f"Error with TTS: {str(e)}")
+            logger.error(f"Error with TTS/Audio: {str(e)}")
+            import traceback
+            traceback.print_exc()
     
     # Handle data messages (text from frontend)
     @room.on("data_received")
@@ -142,13 +155,14 @@ async def entrypoint(ctx: JobContext):
     @room.on("participant_connected")
     def on_participant_connected(participant: rtc.RemoteParticipant):
         if participant.identity != "agent":
+            logger.info(f"Participant connected: {participant.identity}")
             # Send greeting
             if bot_instance.vector_store and not bot_instance.vector_store.is_empty():
                 greeting = f"Hello! I can answer questions about the website content. I have access to {bot_instance.vector_store.get_size()} pieces of information."
             else:
                 greeting = "Hello! Please scrape a website first so I can answer questions about its content."
             
-            asyncio.create_task(handle_message("Hello", participant))
+            asyncio.create_task(handle_message(greeting, participant))
     
     logger.info("Voice agent is ready and waiting for participants")
     
