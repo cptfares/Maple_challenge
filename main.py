@@ -77,7 +77,7 @@ async def scrape_website(request: ScrapeRequest):
         Response with scraping statistics and success status
     """
     try:
-        logger.info(f"Starting to scrape website: {request.url}")
+        logger.info(f"Starting to scrape website: {request.url} with depth: {request.max_depth}")
         
         # Step 1: Scrape the website
         scraped_data = await scraper.scrape_website(str(request.url), request.max_depth)
