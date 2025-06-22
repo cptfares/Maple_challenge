@@ -1,6 +1,8 @@
 import os
 import asyncio
 import logging
+import subprocess
+import signal
 from typing import Optional
 from livekit import api
 import aiohttp
@@ -12,6 +14,7 @@ class LiveKitService:
         self.api_key = os.getenv("LIVEKIT_API_KEY")
         self.api_secret = os.getenv("LIVEKIT_API_SECRET") 
         self.url = os.getenv("LIVEKIT_URL", "wss://your-livekit-server.com")
+        self.agent_process = None
         
         if not self.api_key or not self.api_secret:
             logger.warning("LiveKit credentials not found. Voice features will be disabled.")
@@ -83,6 +86,52 @@ class LiveKitService:
         except Exception as e:
             logger.error(f"Failed to delete LiveKit room: {str(e)}")
             return False
+    
+    async def start_voice_agent(self) -> bool:
+        """Start the LiveKit voice agent"""
+        if not self.enabled:
+            return False
+            
+        try:
+            # Stop existing agent if running
+            await self.stop_voice_agent()
+            
+            # Set environment variables for the agent
+            env = os.environ.copy()
+            env["LIVEKIT_API_KEY"] = self.api_key
+            env["LIVEKIT_API_SECRET"] = self.api_secret
+            env["LIVEKIT_URL"] = self.url
+            
+            # Start the voice agent process
+            self.agent_process = subprocess.Popen(
+                ["python", "start_voice_agent.py"],
+                env=env,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
+            
+            logger.info("Voice agent started successfully")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to start voice agent: {str(e)}")
+            return False
+    
+    async def stop_voice_agent(self) -> bool:
+        """Stop the LiveKit voice agent"""
+        if self.agent_process:
+            try:
+                self.agent_process.terminate()
+                await asyncio.sleep(1)
+                if self.agent_process.poll() is None:
+                    self.agent_process.kill()
+                self.agent_process = None
+                logger.info("Voice agent stopped")
+                return True
+            except Exception as e:
+                logger.error(f"Error stopping voice agent: {str(e)}")
+                return False
+        return True
     
     def is_enabled(self) -> bool:
         """Check if LiveKit service is properly configured"""

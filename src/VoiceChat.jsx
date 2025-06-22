@@ -100,16 +100,64 @@ const VoiceChat = ({ onBack, scrapedData }) => {
         }
       });
 
+      // Handle speech recognition
+      let recognition = null;
+      if ('webkitSpeechRecognition' in window) {
+        recognition = new window.webkitSpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+
+        recognition.onresult = async (event) => {
+          const transcript = event.results[event.results.length - 1][0].transcript;
+          console.log('Speech recognized:', transcript);
+          
+          // Add user message to conversation
+          setConversation(prev => [...prev, {
+            id: Date.now(),
+            type: 'user',
+            message: transcript
+          }]);
+
+          // Send message to agent via data channel
+          const message = JSON.stringify({
+            type: 'text_message',
+            text: transcript
+          });
+          await livekitRoom.localParticipant.publishData(new TextEncoder().encode(message));
+        };
+
+        recognition.onerror = (event) => {
+          console.error('Speech recognition error:', event.error);
+        };
+
+        // Start recognition
+        try {
+          recognition.start();
+          console.log('Speech recognition started');
+        } catch (error) {
+          console.error('Failed to start speech recognition:', error);
+        }
+      }
+
       // Connect with token
       await livekitRoom.connect(data.url, data.token);
       
       // Enable microphone
-      const tracks = await createLocalTracks({
-        audio: true,
-        video: false,
-      });
+      try {
+        const tracks = await createLocalTracks({
+          audio: true,
+          video: false,
+        });
+        
+        if (tracks && tracks.length > 0) {
+          await livekitRoom.localParticipant.publishTrack(tracks[0]);
+        }
+      } catch (trackError) {
+        console.error('Microphone access error:', trackError);
+        // Continue without microphone for now
+      }
       
-      await livekitRoom.localParticipant.publishTrack(tracks[0]);
       setRoom(livekitRoom);
       
     } catch (err) {
@@ -123,11 +171,21 @@ const VoiceChat = ({ onBack, scrapedData }) => {
 
   const disconnectFromVoiceChat = async () => {
     if (roomRef.current) {
+      const roomName = roomRef.current.name;
       roomRef.current.disconnect();
       roomRef.current = null;
       setRoom(null);
       setIsConnected(false);
       setConnectionStatus('disconnected');
+      
+      // Clean up the room on the server
+      try {
+        await fetch(`${API_BASE}/voice/room/${roomName}`, {
+          method: 'DELETE',
+        });
+      } catch (error) {
+        console.error('Error cleaning up room:', error);
+      }
     }
   };
 

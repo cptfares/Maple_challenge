@@ -12,6 +12,7 @@ from chunker import TextChunker
 from vector_store import VectorStore
 from chat_service import ChatService
 from livekit_service import LiveKitService
+import simple_voice_agent
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -39,6 +40,9 @@ embedding_service = EmbeddingService()
 vector_store = VectorStore()
 chat_service = ChatService()
 livekit_service = LiveKitService()
+
+# Set services for voice agent
+simple_voice_agent.set_services(vector_store, embedding_service)
 
 # Pydantic models
 class ScrapeRequest(BaseModel):
@@ -199,7 +203,7 @@ async def create_voice_room(request: VoiceRoomRequest):
         if not livekit_service.is_enabled():
             raise HTTPException(
                 status_code=503, 
-                detail="Voice features are not configured. Please set LIVEKIT_API_KEY and LIVEKIT_API_SECRET."
+                detail="Voice features are not configured. Please set LIVEKIT_API_KEY, LIVEKIT_API_SECRET, and LIVEKIT_URL."
             )
         
         # Check if we have website content
@@ -214,10 +218,17 @@ async def create_voice_room(request: VoiceRoomRequest):
         if not room_info:
             raise HTTPException(status_code=500, detail="Failed to create voice room")
         
+        # Start the voice agent
+        agent_started = await livekit_service.start_voice_agent()
+        if not agent_started:
+            raise HTTPException(status_code=500, detail="Failed to start voice agent")
+        
         # Generate token for user
         token = await livekit_service.generate_token(request.room_name, "user")
         if not token:
             raise HTTPException(status_code=500, detail="Failed to generate access token")
+        
+        logger.info(f"Voice room created: {request.room_name} with agent")
         
         return VoiceRoomResponse(
             success=True,
@@ -234,11 +245,15 @@ async def create_voice_room(request: VoiceRoomRequest):
 
 @app.delete("/voice/room/{room_name}")
 async def delete_voice_room(room_name: str):
-    """Delete a LiveKit room"""
+    """Delete a LiveKit room and stop the voice agent"""
     try:
         if not livekit_service.is_enabled():
             return {"success": False, "message": "Voice features not enabled"}
         
+        # Stop the voice agent
+        await livekit_service.stop_voice_agent()
+        
+        # Delete the room
         success = await livekit_service.delete_room(room_name)
         return {"success": success}
         
