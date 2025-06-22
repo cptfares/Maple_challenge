@@ -1,18 +1,18 @@
-import React, { useState } from 'react';
-import VoiceChat from './VoiceChat.jsx';
+import React, { useState } from "react";
+import VoiceChat from "VoiceChat.jsx";
 
-const API_BASE = '/api';
+const API_BASE = "/api";
 
 function App() {
-  const [url, setUrl] = useState('');
+  const [url, setUrl] = useState("");
   const [depth, setDepth] = useState(2);
   const [scrapeStatus, setScrapeStatus] = useState(null);
   const [isScrapingLoading, setIsScrapingLoading] = useState(false);
   const [scrapeProgress, setScrapeProgress] = useState(0);
   const [scrapedData, setScrapedData] = useState(null);
-  const [currentMode, setCurrentMode] = useState('scrape'); // 'scrape', 'chat', or 'voice'
+  const [currentMode, setCurrentMode] = useState("scrape"); // 'scrape', 'chat', or 'voice'
   const [messages, setMessages] = useState([]);
-  const [question, setQuestion] = useState('');
+  const [question, setQuestion] = useState("");
   const [isChatLoading, setIsChatLoading] = useState(false);
 
   const handleScrape = async (e) => {
@@ -26,7 +26,7 @@ function App() {
 
     // Simulate progress bar animation
     const progressInterval = setInterval(() => {
-      setScrapeProgress(prev => {
+      setScrapeProgress((prev) => {
         if (prev >= 90) return prev;
         return prev + Math.random() * 10;
       });
@@ -34,13 +34,13 @@ function App() {
 
     try {
       const response = await fetch(`${API_BASE}/scrape`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           url: url.trim(),
-          max_depth: depth
+          max_depth: depth,
         }),
       });
 
@@ -51,27 +51,27 @@ function App() {
       if (data.success) {
         setScrapedData(data);
         setScrapeStatus({
-          type: 'success',
-          message: `Successfully scraped ${data.pages_scraped} pages and created ${data.chunks_created} text chunks.`
+          type: "success",
+          message: `Successfully scraped ${data.pages_scraped} pages and created ${data.chunks_created} text chunks.`,
         });
         // Clear any existing messages when scraping new content
         setMessages([]);
-        
+
         setTimeout(() => {
           setScrapeProgress(0);
         }, 1000);
       } else {
         setScrapeStatus({
-          type: 'error',
-          message: data.message || 'Failed to scrape website'
+          type: "error",
+          message: data.message || "Failed to scrape website",
         });
         setScrapeProgress(0);
       }
     } catch (error) {
       clearInterval(progressInterval);
       setScrapeStatus({
-        type: 'error',
-        message: `Error: ${error.message}`
+        type: "error",
+        message: `Error: ${error.message}`,
       });
       setScrapeProgress(0);
     } finally {
@@ -84,60 +84,62 @@ function App() {
     if (!question.trim()) return;
 
     const userQuestion = question.trim();
-    setQuestion('');
+    setQuestion("");
     setIsChatLoading(true);
 
     // Add user message
     const userMessage = {
       id: Date.now(),
-      type: 'user',
-      content: userQuestion
+      type: "user",
+      content: userQuestion,
     };
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
 
     // Add loading message
     const loadingMessage = {
       id: Date.now() + 1,
-      type: 'loading',
-      content: 'Thinking...'
+      type: "loading",
+      content: "Thinking...",
     };
-    setMessages(prev => [...prev, loadingMessage]);
+    setMessages((prev) => [...prev, loadingMessage]);
 
     try {
       const response = await fetch(`${API_BASE}/chat`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           question: userQuestion,
-          top_k: 5
+          top_k: 5,
         }),
       });
 
       const data = await response.json();
 
       // Remove loading message and add bot response
-      setMessages(prev => {
-        const filtered = prev.filter(msg => msg.type !== 'loading');
+      setMessages((prev) => {
+        const filtered = prev.filter((msg) => msg.type !== "loading");
         const botMessage = {
           id: Date.now() + 2,
-          type: 'bot',
-          content: data.success ? data.answer : data.error || 'Sorry, I encountered an error while processing your question.',
-          sources: data.sources || []
+          type: "bot",
+          content: data.success
+            ? data.answer
+            : data.error ||
+              "Sorry, I encountered an error while processing your question.",
+          sources: data.sources || [],
         };
         return [...filtered, botMessage];
       });
-
     } catch (error) {
       // Remove loading message and add error response
-      setMessages(prev => {
-        const filtered = prev.filter(msg => msg.type !== 'loading');
+      setMessages((prev) => {
+        const filtered = prev.filter((msg) => msg.type !== "loading");
         const errorMessage = {
           id: Date.now() + 2,
-          type: 'bot',
+          type: "bot",
           content: `Error: ${error.message}`,
-          sources: []
+          sources: [],
         };
         return [...filtered, errorMessage];
       });
@@ -151,7 +153,7 @@ function App() {
   };
 
   const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleChat(e);
     }
@@ -165,7 +167,7 @@ function App() {
       </header>
 
       <div className="container">
-        {currentMode === 'scrape' ? (
+        {currentMode === "scrape" ? (
           /* Scraping Mode */
           <section className="scrape-mode">
             <div className="url-section">
@@ -206,7 +208,7 @@ function App() {
                   className="scrape-btn"
                   disabled={isScrapingLoading || !url.trim()}
                 >
-                  {isScrapingLoading ? 'Scraping...' : 'Start Scraping'}
+                  {isScrapingLoading ? "Scraping..." : "Start Scraping"}
                 </button>
               </form>
 
@@ -217,8 +219,8 @@ function App() {
                     <span>{Math.round(scrapeProgress)}%</span>
                   </div>
                   <div className="progress-bar">
-                    <div 
-                      className="progress-fill" 
+                    <div
+                      className="progress-fill"
                       style={{ width: `${scrapeProgress}%` }}
                     ></div>
                   </div>
@@ -236,14 +238,14 @@ function App() {
                   <h3>Scraping Complete! Choose how to interact:</h3>
                   <div className="mode-buttons">
                     <button
-                      onClick={() => setCurrentMode('chat')}
+                      onClick={() => setCurrentMode("chat")}
                       className="mode-btn chat-btn"
                     >
                       💬 Chat Mode
                       <span>Ask questions about the content</span>
                     </button>
                     <button
-                      onClick={() => setCurrentMode('voice')}
+                      onClick={() => setCurrentMode("voice")}
                       className="mode-btn talk-btn"
                     >
                       🎙️ Talk Mode
@@ -254,19 +256,22 @@ function App() {
               )}
             </div>
           </section>
-        ) : currentMode === 'chat' ? (
+        ) : currentMode === "chat" ? (
           /* Chat Mode */
           <section className="chat-mode">
             <div className="mode-header">
               <button
-                onClick={() => setCurrentMode('scrape')}
+                onClick={() => setCurrentMode("scrape")}
                 className="back-btn"
               >
                 ← Back to Scraping
               </button>
               <div className="scraped-info">
                 <h3>Chatting with: {new URL(url).hostname}</h3>
-                <p>{scrapedData?.pages_scraped} pages • {scrapedData?.chunks_created} chunks</p>
+                <p>
+                  {scrapedData?.pages_scraped} pages •{" "}
+                  {scrapedData?.chunks_created} chunks
+                </p>
               </div>
               {messages.length > 0 && (
                 <button onClick={clearChat} className="clear-btn">
@@ -279,7 +284,8 @@ function App() {
               <div className="chat-messages">
                 {messages.length === 0 ? (
                   <div className="empty-state">
-                    Ask me anything about the content from {new URL(url).hostname}
+                    Ask me anything about the content from{" "}
+                    {new URL(url).hostname}
                   </div>
                 ) : (
                   messages.map((message) => (
@@ -290,7 +296,7 @@ function App() {
                       {message.content}
                       {message.sources && message.sources.length > 0 && (
                         <div className="sources">
-                          <strong>Sources:</strong>{' '}
+                          <strong>Sources:</strong>{" "}
                           {message.sources.map((source, index) => (
                             <a
                               key={index}
@@ -324,15 +330,15 @@ function App() {
                   className="send-btn"
                   disabled={isChatLoading || !question.trim()}
                 >
-                  {isChatLoading ? 'Sending...' : 'Send'}
+                  {isChatLoading ? "Sending..." : "Send"}
                 </button>
               </form>
             </div>
           </section>
         ) : (
           /* Voice Mode */
-          <VoiceChat 
-            onBack={() => setCurrentMode('scrape')}
+          <VoiceChat
+            onBack={() => setCurrentMode("scrape")}
             scrapedData={scrapedData}
           />
         )}
