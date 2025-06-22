@@ -10,6 +10,9 @@ const VoiceChat = ({ onBack, scrapedData }) => {
   const [error, setError] = useState(null);
   const [isMuted, setIsMuted] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState('disconnected');
+  const [isListening, setIsListening] = useState(false);
+  const [conversation, setConversation] = useState([]);
+  const [currentMessage, setCurrentMessage] = useState('');
   
   const audioRef = useRef(null);
   const roomRef = useRef(null);
@@ -45,12 +48,22 @@ const VoiceChat = ({ onBack, scrapedData }) => {
         console.log('Connected to voice chat');
         setIsConnected(true);
         setConnectionStatus('connected');
+        setConversation(prev => [...prev, {
+          id: Date.now(),
+          type: 'system',
+          message: 'Connected to AI assistant. You can start speaking!'
+        }]);
       });
       
       livekitRoom.on('disconnected', () => {
         console.log('Disconnected from voice chat');
         setIsConnected(false);
         setConnectionStatus('disconnected');
+        setConversation(prev => [...prev, {
+          id: Date.now(),
+          type: 'system',
+          message: 'Disconnected from voice assistant'
+        }]);
       });
       
       livekitRoom.on('trackSubscribed', (track, publication, participant) => {
@@ -59,6 +72,31 @@ const VoiceChat = ({ onBack, scrapedData }) => {
           if (audioRef.current) {
             audioRef.current.appendChild(audioElement);
           }
+          setIsListening(true);
+          setTimeout(() => setIsListening(false), 3000); // Visual feedback
+        }
+      });
+
+      livekitRoom.on('dataReceived', (payload, participant) => {
+        try {
+          const data = JSON.parse(new TextDecoder().decode(payload));
+          if (data.type === 'transcript' && data.text) {
+            if (data.speaker === 'user') {
+              setConversation(prev => [...prev, {
+                id: Date.now(),
+                type: 'user',
+                message: data.text
+              }]);
+            } else if (data.speaker === 'assistant') {
+              setConversation(prev => [...prev, {
+                id: Date.now(),
+                type: 'assistant',
+                message: data.text
+              }]);
+            }
+          }
+        } catch (e) {
+          console.error('Error parsing data:', e);
         }
       });
 
@@ -160,38 +198,66 @@ const VoiceChat = ({ onBack, scrapedData }) => {
         ) : (
           <div className="voice-active">
             <div className="connection-status">
-              <div className={`status-indicator ${connectionStatus}`}></div>
+              <div className={`status-indicator ${connectionStatus} ${isListening ? 'listening' : ''}`}></div>
               <span>Connected to Voice Assistant</span>
             </div>
             
-            <div className="voice-visualization">
-              <div className="voice-avatar">
-                <div className="avatar-circle">
-                  <span>🤖</span>
+            <div className="voice-layout">
+              <div className="voice-visualization">
+                <div className="voice-avatar">
+                  <div className={`avatar-circle ${isListening ? 'listening' : ''}`}>
+                    <span>🤖</span>
+                  </div>
+                  <p>{isListening ? 'Assistant is speaking...' : 'Listening for your question...'}</p>
                 </div>
-                <p>AI Assistant is listening...</p>
+                
+                <div className="voice-controls">
+                  <button
+                    onClick={toggleMute}
+                    className={`control-btn ${isMuted ? 'muted' : ''}`}
+                  >
+                    {isMuted ? '🔇' : '🎤'} {isMuted ? 'Unmute' : 'Mute'}
+                  </button>
+                  
+                  <button
+                    onClick={disconnectFromVoiceChat}
+                    className="control-btn disconnect"
+                  >
+                    📞 End Call
+                  </button>
+                </div>
               </div>
-            </div>
-            
-            <div className="voice-controls">
-              <button
-                onClick={toggleMute}
-                className={`control-btn ${isMuted ? 'muted' : ''}`}
-              >
-                {isMuted ? '🔇' : '🎤'} {isMuted ? 'Unmute' : 'Mute'}
-              </button>
-              
-              <button
-                onClick={disconnectFromVoiceChat}
-                className="control-btn disconnect"
-              >
-                📞 End Call
-              </button>
-            </div>
-            
-            <div className="voice-instructions">
-              <p>💬 Just speak naturally to ask questions about the website content</p>
-              <p>🎯 The assistant has access to all {scrapedData?.chunks_created} content chunks</p>
+
+              <div className="conversation-panel">
+                <div className="conversation-header">
+                  <h4>Conversation</h4>
+                  <span className="content-info">{scrapedData?.chunks_created} chunks available</span>
+                </div>
+                
+                <div className="conversation-messages">
+                  {conversation.length === 0 ? (
+                    <div className="conversation-empty">
+                      <p>Start speaking to begin your conversation about the website content</p>
+                    </div>
+                  ) : (
+                    conversation.map((item) => (
+                      <div key={item.id} className={`conversation-item ${item.type}`}>
+                        <div className="message-content">
+                          {item.type === 'user' && <span className="speaker">You:</span>}
+                          {item.type === 'assistant' && <span className="speaker">AI:</span>}
+                          {item.type === 'system' && <span className="speaker">System:</span>}
+                          <span className="message-text">{item.message}</span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+                
+                <div className="conversation-footer">
+                  <p>💬 Speak naturally about the website content</p>
+                  <p>🎯 Ask questions, request summaries, or discuss specific topics</p>
+                </div>
+              </div>
             </div>
           </div>
         )}
