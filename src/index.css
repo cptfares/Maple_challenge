@@ -45,28 +45,44 @@ body {
   flex: 1;
 }
 
-.url-section {
+.scrape-mode, .chat-mode {
   background: white;
   border-radius: 12px;
   padding: 2rem;
-  margin-bottom: 2rem;
   box-shadow: 0 4px 20px rgba(0,0,0,0.08);
 }
 
 .url-section h2 {
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
   color: #333;
-  font-size: 1.3rem;
+  font-size: 1.5rem;
+  text-align: center;
 }
 
-.url-input-group {
+.input-row {
   display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
 }
 
-.url-input {
+.input-group {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.depth-group {
+  flex: 0 0 200px;
+}
+
+.input-group label {
+  margin-bottom: 0.5rem;
+  color: #555;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.url-input, .depth-select {
   padding: 0.75rem;
   border: 2px solid #e1e5e9;
   border-radius: 8px;
@@ -74,22 +90,28 @@ body {
   transition: border-color 0.2s;
 }
 
-.url-input:focus {
+.url-input:focus, .depth-select:focus {
   outline: none;
   border-color: #667eea;
+}
+
+.depth-select {
+  background: white;
+  cursor: pointer;
 }
 
 .scrape-btn {
   background: #667eea;
   color: white;
   border: none;
-  padding: 0.75rem 1.5rem;
+  padding: 1rem 2rem;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 1.1rem;
   font-weight: 600;
   transition: background-color 0.2s;
-  white-space: nowrap;
+  width: 100%;
+  margin-bottom: 1rem;
 }
 
 .scrape-btn:hover:not(:disabled) {
@@ -99,6 +121,123 @@ body {
 .scrape-btn:disabled {
   background: #ccc;
   cursor: not-allowed;
+}
+
+.progress-section {
+  margin: 1.5rem 0;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #e1e5e9;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.mode-selection {
+  margin-top: 2rem;
+  text-align: center;
+}
+
+.mode-selection h3 {
+  margin-bottom: 1.5rem;
+  color: #333;
+  font-size: 1.2rem;
+}
+
+.mode-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.mode-btn {
+  background: white;
+  border: 2px solid #e1e5e9;
+  border-radius: 12px;
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.mode-btn:hover:not(.disabled) {
+  border-color: #667eea;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.1);
+}
+
+.chat-btn {
+  border-color: #667eea;
+  color: #667eea;
+}
+
+.talk-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  color: #999;
+}
+
+.mode-btn span {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.mode-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e1e5e9;
+}
+
+.back-btn {
+  background: #f1f3f4;
+  color: #666;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.back-btn:hover {
+  background: #e1e5e9;
+}
+
+.scraped-info h3 {
+  margin: 0;
+  color: #333;
+  font-size: 1.2rem;
+}
+
+.scraped-info p {
+  margin: 0.25rem 0 0 0;
+  color: #666;
+  font-size: 0.9rem;
 }
 
 .status-message {
@@ -284,16 +423,33 @@ body {
     font-size: 2rem;
   }
   
-  .url-section, .chat-section {
+  .scrape-mode, .chat-mode {
     padding: 1rem;
   }
   
-  .url-input-group {
+  .input-row {
     flex-direction: column;
   }
   
-  .scrape-btn {
+  .depth-group {
+    flex: 1;
+  }
+  
+  .mode-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .mode-btn {
+    min-width: auto;
     width: 100%;
+    max-width: 300px;
+  }
+  
+  .mode-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
   }
   
   .chat-section {
