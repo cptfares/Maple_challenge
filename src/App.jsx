@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import VoiceChat from './VoiceChat.jsx';
 
 const API_BASE = '/api';
 
@@ -9,7 +10,7 @@ function App() {
   const [isScrapingLoading, setIsScrapingLoading] = useState(false);
   const [scrapeProgress, setScrapeProgress] = useState(0);
   const [scrapedData, setScrapedData] = useState(null);
-  const [currentMode, setCurrentMode] = useState('scrape'); // 'scrape' or 'chat'
+  const [currentMode, setCurrentMode] = useState('scrape'); // 'scrape', 'chat', or 'voice'
   const [messages, setMessages] = useState([]);
   const [question, setQuestion] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
@@ -242,18 +243,18 @@ function App() {
                       <span>Ask questions about the content</span>
                     </button>
                     <button
-                      className="mode-btn talk-btn disabled"
-                      disabled
+                      onClick={() => setCurrentMode('voice')}
+                      className="mode-btn talk-btn"
                     >
                       🎙️ Talk Mode
-                      <span>Coming soon...</span>
+                      <span>Voice conversation with AI</span>
                     </button>
                   </div>
                 </div>
               )}
             </div>
           </section>
-        ) : (
+        ) : currentMode === 'chat' ? (
           /* Chat Mode */
           <section className="chat-mode">
             <div className="mode-header">
@@ -328,6 +329,12 @@ function App() {
               </form>
             </div>
           </section>
+        ) : (
+          /* Voice Mode */
+          <VoiceChat 
+            onBack={() => setCurrentMode('scrape')}
+            scrapedData={scrapedData}
+          />
         )}
       </div>
     </div>

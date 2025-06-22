@@ -11,6 +11,7 @@ from embeddings import EmbeddingService
 from chunker import TextChunker
 from vector_store import VectorStore
 from chat_service import ChatService
+from livekit_service import LiveKitService
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -37,6 +38,7 @@ chunker = TextChunker()
 embedding_service = EmbeddingService()
 vector_store = VectorStore()
 chat_service = ChatService()
+livekit_service = LiveKitService()
 
 # Pydantic models
 class ScrapeRequest(BaseModel):
@@ -58,6 +60,16 @@ class ChatResponse(BaseModel):
     success: bool
     answer: str
     sources: List[str]
+    error: str = None
+
+class VoiceRoomRequest(BaseModel):
+    room_name: str = "website-chat"
+
+class VoiceRoomResponse(BaseModel):
+    success: bool
+    room_name: str = None
+    token: str = None
+    url: str = None
     error: str = None
 
 @app.get("/")
@@ -176,8 +188,63 @@ async def get_status():
     """Get the current status of the vector store"""
     return {
         "vector_store_size": vector_store.get_size(),
-        "has_content": not vector_store.is_empty()
+        "has_content": not vector_store.is_empty(),
+        "voice_enabled": livekit_service.is_enabled()
     }
+
+@app.post("/voice/create-room", response_model=VoiceRoomResponse)
+async def create_voice_room(request: VoiceRoomRequest):
+    """Create a LiveKit room for voice chat about website content"""
+    try:
+        if not livekit_service.is_enabled():
+            raise HTTPException(
+                status_code=503, 
+                detail="Voice features are not configured. Please set LIVEKIT_API_KEY and LIVEKIT_API_SECRET."
+            )
+        
+        # Check if we have website content
+        if vector_store.is_empty():
+            raise HTTPException(
+                status_code=400,
+                detail="No website content available. Please scrape a website first."
+            )
+        
+        # Create room
+        room_info = await livekit_service.create_room(request.room_name)
+        if not room_info:
+            raise HTTPException(status_code=500, detail="Failed to create voice room")
+        
+        # Generate token for user
+        token = await livekit_service.generate_token(request.room_name, "user")
+        if not token:
+            raise HTTPException(status_code=500, detail="Failed to generate access token")
+        
+        return VoiceRoomResponse(
+            success=True,
+            room_name=request.room_name,
+            token=token,
+            url=livekit_service.url
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating voice room: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Voice room creation failed: {str(e)}")
+
+@app.delete("/voice/room/{room_name}")
+async def delete_voice_room(room_name: str):
+    """Delete a LiveKit room"""
+    try:
+        if not livekit_service.is_enabled():
+            return {"success": False, "message": "Voice features not enabled"}
+        
+        success = await livekit_service.delete_room(room_name)
+        return {"success": success}
+        
+    except Exception as e:
+        logger.error(f"Error deleting voice room: {str(e)}")
+        return {"success": False, "error": str(e)}
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
