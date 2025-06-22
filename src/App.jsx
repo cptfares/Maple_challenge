@@ -5,12 +5,11 @@ const API_BASE = '/api';
 
 function App() {
   const [url, setUrl] = useState('');
-  const [depth, setDepth] = useState(2);
+  const [maxDepth, setMaxDepth] = useState(1);
   const [scrapeStatus, setScrapeStatus] = useState(null);
   const [isScrapingLoading, setIsScrapingLoading] = useState(false);
-  const [scrapeProgress, setScrapeProgress] = useState(0);
   const [scrapedData, setScrapedData] = useState(null);
-  const [currentMode, setCurrentMode] = useState('scrape'); // 'scrape', 'chat', or 'voice'
+  const [currentMode, setCurrentMode] = useState('scrape');
   const [messages, setMessages] = useState([]);
   const [question, setQuestion] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
@@ -23,16 +22,6 @@ function App() {
 
     setIsScrapingLoading(true);
     setScrapeStatus(null);
-    setScrapeProgress(0);
-    setScrapedData(null);
-
-    // Simulate progress bar animation
-    const progressInterval = setInterval(() => {
-      setScrapeProgress(prev => {
-        if (prev >= 90) return prev;
-        return prev + Math.random() * 10;
-      });
-    }, 500);
 
     try {
       const response = await fetch(`${API_BASE}/scrape`, {
@@ -41,41 +30,28 @@ function App() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          url: url.trim(),
-          max_depth: depth
+          url: url,
+          max_depth: parseInt(maxDepth)
         }),
       });
 
       const data = await response.json();
-      clearInterval(progressInterval);
-      setScrapeProgress(100);
 
       if (data.success) {
+        setScrapeStatus('success');
         setScrapedData(data);
-        setScrapeStatus({
-          type: 'success',
-          message: `Successfully scraped ${data.pages_scraped} pages and created ${data.chunks_created} text chunks.`
-        });
-        // Clear any existing messages when scraping new content
-        setMessages([]);
         
-        setTimeout(() => {
-          setScrapeProgress(0);
-        }, 1000);
+        // Fetch updated sites info
+        const sitesResponse = await fetch(`${API_BASE}/sites`);
+        const sitesData = await sitesResponse.json();
+        setScrapedSites(sitesData);
+        setUrl(''); // Clear the input
       } else {
-        setScrapeStatus({
-          type: 'error',
-          message: data.message || 'Failed to scrape website'
-        });
-        setScrapeProgress(0);
+        setScrapeStatus('error');
       }
     } catch (error) {
-      clearInterval(progressInterval);
-      setScrapeStatus({
-        type: 'error',
-        message: `Error: ${error.message}`
-      });
-      setScrapeProgress(0);
+      console.error('Scraping error:', error);
+      setScrapeStatus('error');
     } finally {
       setIsScrapingLoading(false);
     }
@@ -85,77 +61,66 @@ function App() {
     e.preventDefault();
     if (!question.trim()) return;
 
-    const userQuestion = question.trim();
-    setQuestion('');
     setIsChatLoading(true);
 
-    // Add user message
-    const userMessage = {
-      id: Date.now(),
-      type: 'user',
-      content: userQuestion
+    const userMessage = { 
+      type: 'user', 
+      content: question,
+      timestamp: new Date().toLocaleTimeString()
     };
     setMessages(prev => [...prev, userMessage]);
 
-    // Add loading message
-    const loadingMessage = {
-      id: Date.now() + 1,
-      type: 'loading',
-      content: 'Thinking...'
-    };
-    setMessages(prev => [...prev, loadingMessage]);
-
     try {
-      const response = await fetch(`${API_BASE}/chat`, {
+      // Check if it's a structure query
+      const isStructureQuery = question.toLowerCase().includes('how many') || 
+                              question.toLowerCase().includes('structure') ||
+                              question.toLowerCase().includes('sitemap') ||
+                              question.toLowerCase().includes('external links') ||
+                              question.toLowerCase().includes('api endpoints') ||
+                              question.toLowerCase().includes('domains');
+
+      const endpoint = isStructureQuery ? '/query/structure' : '/chat';
+      
+      const response = await fetch(`${API_BASE}${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          question: userQuestion,
+          question: question,
           top_k: 5
         }),
       });
 
       const data = await response.json();
 
-      // Remove loading message and add bot response
-      setMessages(prev => {
-        const filtered = prev.filter(msg => msg.type !== 'loading');
-        const botMessage = {
-          id: Date.now() + 2,
-          type: 'bot',
-          content: data.success ? data.answer : data.error || 'Sorry, I encountered an error while processing your question.',
-          sources: data.sources || []
+      if (data.success) {
+        const assistantMessage = {
+          type: 'assistant',
+          content: data.answer,
+          sources: data.sources || [],
+          timestamp: new Date().toLocaleTimeString()
         };
-        return [...filtered, botMessage];
-      });
-
-    } catch (error) {
-      // Remove loading message and add error response
-      setMessages(prev => {
-        const filtered = prev.filter(msg => msg.type !== 'loading');
+        setMessages(prev => [...prev, assistantMessage]);
+      } else {
         const errorMessage = {
-          id: Date.now() + 2,
-          type: 'bot',
-          content: `Error: ${error.message}`,
-          sources: []
+          type: 'error',
+          content: 'I encountered an error processing your question. Please try again.',
+          timestamp: new Date().toLocaleTimeString()
         };
-        return [...filtered, errorMessage];
-      });
+        setMessages(prev => [...prev, errorMessage]);
+      }
+    } catch (error) {
+      console.error('Chat error:', error);
+      const errorMessage = {
+        type: 'error',
+        content: 'Network error occurred. Please try again.',
+        timestamp: new Date().toLocaleTimeString()
+      };
+      setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsChatLoading(false);
-    }
-  };
-
-  const clearChat = () => {
-    setMessages([]);
-  };
-
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleChat(e);
+      setQuestion('');
     }
   };
 
@@ -173,180 +138,274 @@ function App() {
     fetchSites();
   }, []);
 
+  const clearMessages = () => {
+    setMessages([]);
+  };
+
   return (
     <div className="app">
-      <header className="header">
-        <h1>Website Chat Tool</h1>
-        <p>Scrape any website and chat with its content using AI</p>
+      <header className="app-header">
+        <div className="header-content">
+          <h1>Enhanced Website Chat Assistant</h1>
+          <p>Multi-site analysis, structural queries, and intelligent content discovery</p>
+        </div>
       </header>
 
-      <div className="container">
+      <div className="app-content">
         {currentMode === 'scrape' ? (
-          /* Scraping Mode */
           <section className="scrape-mode">
-            <div className="url-section">
-              <h2>Enter Website Details</h2>
-              <form onSubmit={handleScrape}>
-                <div className="input-row">
-                  <div className="input-group">
-                    <label htmlFor="url">Website URL</label>
-                    <input
-                      id="url"
-                      type="url"
-                      value={url}
-                      onChange={(e) => setUrl(e.target.value)}
-                      placeholder="https://example.com"
-                      className="url-input"
-                      disabled={isScrapingLoading}
-                      required
-                    />
-                  </div>
-                  <div className="input-group depth-group">
-                    <label htmlFor="depth">Crawl Depth</label>
-                    <select
-                      id="depth"
-                      value={depth}
-                      onChange={(e) => setDepth(parseInt(e.target.value))}
-                      className="depth-select"
-                      disabled={isScrapingLoading}
-                    >
-                      <option value={0}>Current page only</option>
-                      <option value={1}>1 level deep</option>
-                      <option value={2}>2 levels deep</option>
-                      <option value={3}>3 levels deep</option>
-                    </select>
-                  </div>
-                </div>
-                <button
-                  type="submit"
-                  className="scrape-btn"
-                  disabled={isScrapingLoading || !url.trim()}
-                >
-                  {isScrapingLoading ? 'Scraping...' : 'Start Scraping'}
-                </button>
-              </form>
-
-              {isScrapingLoading && (
-                <div className="progress-section">
-                  <div className="progress-info">
-                    <span>Scraping website and processing content...</span>
-                    <span>{Math.round(scrapeProgress)}%</span>
-                  </div>
-                  <div className="progress-bar">
-                    <div 
-                      className="progress-fill" 
-                      style={{ width: `${scrapeProgress}%` }}
-                    ></div>
-                  </div>
-                </div>
-              )}
-
-              {scrapeStatus && (
-                <div className={`status-message status-${scrapeStatus.type}`}>
-                  {scrapeStatus.message}
-                </div>
-              )}
-
-              {scrapedData && (
-                <div className="mode-selection">
-                  <h3>Scraping Complete! Choose how to interact:</h3>
-                  <div className="mode-buttons">
-                    <button
-                      onClick={() => setCurrentMode('chat')}
-                      className="mode-btn chat-btn"
-                    >
-                      💬 Chat Mode
-                      <span>Ask questions about content and structure</span>
-                    </button>
-                    <button
-                      onClick={() => setCurrentMode('voice')}
-                      className="mode-btn talk-btn"
-                    >
-                      🎙️ Talk Mode
-                      <span>Voice conversation with AI</span>
-                    </button>
-                  </div>
-                </div>
-              )}
+            <div className="mode-header">
+              <h2>Multi-Site Knowledge Base</h2>
+              <p>Add websites to build your comprehensive knowledge base</p>
             </div>
+
+            {/* Multi-site overview */}
+            {scrapedSites && scrapedSites.total_sites > 0 && (
+              <div className="sites-overview">
+                <h3>Active Knowledge Base ({scrapedSites.total_sites} websites)</h3>
+                <div className="sites-grid">
+                  {Object.entries(scrapedSites.sites).map(([domain, info]) => (
+                    <div key={domain} className="site-card">
+                      <div className="site-header">
+                        <h4>{domain}</h4>
+                        <span className="site-status">Active</span>
+                      </div>
+                      <div className="site-stats">
+                        <div className="stat">
+                          <span className="stat-number">{info.total_pages}</span>
+                          <span className="stat-label">Pages</span>
+                        </div>
+                        <div className="stat">
+                          <span className="stat-number">{info.structure.total_api_endpoints}</span>
+                          <span className="stat-label">APIs</span>
+                        </div>
+                        <div className="stat">
+                          <span className="stat-number">{info.structure.total_images}</span>
+                          <span className="stat-label">Images</span>
+                        </div>
+                      </div>
+                      <div className="content-types">
+                        {info.structure.content_types.map(type => (
+                          <span key={type} className={`content-type ${type}`}>{type}</span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <form onSubmit={handleScrape} className="scrape-form">
+              <div className="form-group">
+                <label htmlFor="url">Website URL:</label>
+                <input
+                  type="url"
+                  id="url"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  placeholder="https://example.com"
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="maxDepth">Crawl Depth:</label>
+                <select
+                  id="maxDepth"
+                  value={maxDepth}
+                  onChange={(e) => setMaxDepth(e.target.value)}
+                >
+                  <option value={0}>Current page only</option>
+                  <option value={1}>1 level deep</option>
+                  <option value={2}>2 levels deep</option>
+                  <option value={3}>3 levels deep</option>
+                </select>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isScrapingLoading}
+                className="scrape-btn"
+              >
+                {isScrapingLoading ? 'Adding to Knowledge Base...' : 'Add Website'}
+              </button>
+            </form>
+
+            {scrapeStatus && (
+              <div className={`status-message ${scrapeStatus}`}>
+                {scrapeStatus === 'success' ? (
+                  <div className="success-details">
+                    <h3>Website Added Successfully!</h3>
+                    <div className="scraped-info">
+                      <div className="info-grid">
+                        <div className="info-item">
+                          <span className="info-number">{scrapedData?.pages_scraped}</span>
+                          <span className="info-label">Pages Processed</span>
+                        </div>
+                        <div className="info-item">
+                          <span className="info-number">{scrapedData?.chunks_created}</span>
+                          <span className="info-label">Content Chunks</span>
+                        </div>
+                        <div className="info-item">
+                          <span className="info-number">{scrapedData?.embeddings_stored}</span>
+                          <span className="info-label">Embeddings</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <p>Failed to process the website. Please verify the URL and try again.</p>
+                )}
+              </div>
+            )}
+
+            {(scrapedData || (scrapedSites && scrapedSites.total_sites > 0)) && (
+              <div className="mode-selection">
+                <h3>Knowledge Base Ready - Choose Interaction Mode:</h3>
+                <div className="mode-buttons">
+                  <button
+                    onClick={() => setCurrentMode('chat')}
+                    className="mode-btn chat-btn"
+                  >
+                    <div className="mode-icon">💬</div>
+                    <div className="mode-content">
+                      <h4>Enhanced Chat</h4>
+                      <span>Multi-site queries, structure analysis, content discovery</span>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setCurrentMode('voice')}
+                    className="mode-btn talk-btn"
+                  >
+                    <div className="mode-icon">🎙️</div>
+                    <div className="mode-content">
+                      <h4>Voice Assistant</h4>
+                      <span>Conversational AI with knowledge base access</span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            )}
           </section>
         ) : currentMode === 'chat' ? (
-          /* Chat Mode */
           <section className="chat-mode">
             <div className="mode-header">
               <button
                 onClick={() => setCurrentMode('scrape')}
                 className="back-btn"
               >
-                ← Back to Scraping
+                ← Back to Knowledge Base
               </button>
-              <div className="scraped-info">
-                <h3>Chatting with: {new URL(url).hostname}</h3>
-                <p>{scrapedData?.pages_scraped} pages • {scrapedData?.chunks_created} chunks</p>
+              <div className="chat-info">
+                <h3>Enhanced Knowledge Assistant</h3>
+                {scrapedSites && (
+                  <div className="chat-controls">
+                    <div className="domain-selector">
+                      <label>Focus on:</label>
+                      <select 
+                        value={selectedDomain} 
+                        onChange={(e) => setSelectedDomain(e.target.value)}
+                        className="domain-select"
+                      >
+                        <option value="all">All websites ({scrapedSites.total_sites})</option>
+                        {Object.keys(scrapedSites.sites).map(domain => (
+                          <option key={domain} value={domain}>{domain}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="query-types">
+                      <button 
+                        className="query-type-btn"
+                        onClick={() => setQuestion('How many pages are there in total?')}
+                      >
+                        Structure Query
+                      </button>
+                      <button 
+                        className="query-type-btn"
+                        onClick={() => setQuestion('What external domains are linked?')}
+                      >
+                        Link Analysis
+                      </button>
+                      <button 
+                        className="query-type-btn"
+                        onClick={() => setQuestion('What API endpoints were found?')}
+                      >
+                        API Discovery
+                      </button>
+                      <button 
+                        className="query-type-btn"
+                        onClick={clearMessages}
+                      >
+                        Clear Chat
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-              {messages.length > 0 && (
-                <button onClick={clearChat} className="clear-btn">
-                  Clear Chat
-                </button>
-              )}
             </div>
 
-            <div className="chat-section">
-              <div className="chat-messages">
+            <div className="chat-container">
+              <div className="messages">
                 {messages.length === 0 ? (
-                  <div className="empty-state">
-                    Ask me anything about the content from {new URL(url).hostname}
+                  <div className="welcome-message">
+                    <div className="capabilities-grid">
+                      <div className="capability">
+                        <h4>📊 Structural Analysis</h4>
+                        <p>Ask about website architecture, page counts, navigation structure</p>
+                        <em>"How many pages are there?" "What's the site structure?"</em>
+                      </div>
+                      <div className="capability">
+                        <h4>🔗 Link Intelligence</h4>
+                        <p>Discover external connections, API endpoints, resource links</p>
+                        <em>"What external domains are linked?" "Find API endpoints"</em>
+                      </div>
+                      <div className="capability">
+                        <h4>🌐 Multi-Site Queries</h4>
+                        <p>Compare content across multiple websites in your knowledge base</p>
+                        <em>"Compare these sites" "What topics overlap?"</em>
+                      </div>
+                      <div className="capability">
+                        <h4>🖼️ Content Discovery</h4>
+                        <p>Find images, documents, and multimedia resources</p>
+                        <em>"What images are available?" "List downloadable content"</em>
+                      </div>
+                    </div>
                   </div>
                 ) : (
-                  messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`message message-${message.type}`}
-                    >
-                      {message.content}
-                      {message.sources && message.sources.length > 0 && (
-                        <div className="sources">
-                          <strong>Sources:</strong>{' '}
-                          {message.sources.map((source, index) => (
-                            <a
-                              key={index}
-                              href={source}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="source-link"
-                            >
-                              {new URL(source).hostname}
-                            </a>
-                          ))}
-                        </div>
-                      )}
+                  messages.map((message, index) => (
+                    <div key={index} className={`message ${message.type}`}>
+                      <div className="message-content">
+                        <p>{message.content}</p>
+                        {message.sources && message.sources.length > 0 && (
+                          <div className="sources">
+                            <small>Sources: {message.sources.join(', ')}</small>
+                          </div>
+                        )}
+                        <span className="timestamp">{message.timestamp}</span>
+                      </div>
                     </div>
                   ))
                 )}
               </div>
 
-              <form onSubmit={handleChat} className="chat-input-group">
-                <textarea
+              <form onSubmit={handleChat} className="chat-form">
+                <input
+                  type="text"
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="Ask about content, structure, or relationships..."
-                  className="chat-input"
+                  placeholder="Ask about content, structure, links, or cross-site analysis..."
                   disabled={isChatLoading}
-                  rows="1"
                 />
                 <button
                   type="submit"
-                  className="send-btn"
                   disabled={isChatLoading || !question.trim()}
                 >
-                  {isChatLoading ? 'Sending...' : 'Send'}
+                  {isChatLoading ? 'Processing...' : 'Send'}
                 </button>
               </form>
             </div>
           </section>
         ) : (
-          /* Voice Mode */
           <VoiceChat 
             onBack={() => setCurrentMode('scrape')}
             scrapedData={scrapedData}
