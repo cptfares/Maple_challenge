@@ -13,152 +13,11 @@ const VoiceChat = ({ onBack, scrapedData }) => {
   const [isListening, setIsListening] = useState(false);
   const [conversation, setConversation] = useState([]);
   const [currentMessage, setCurrentMessage] = useState('');
-  const [useWebVoice, setUseWebVoice] = useState(true);
-  const [isProcessing, setIsProcessing] = useState(false);
   
   const audioRef = useRef(null);
   const roomRef = useRef(null);
-  const wsRef = useRef(null);
-  const recognitionRef = useRef(null);
-
-  const connectToWebVoice = async () => {
-    setIsConnecting(true);
-    setError(null);
-    
-    try {
-      // Connect via WebSocket for web-based voice
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.host}/ws/voice`;
-      
-      const ws = new WebSocket(wsUrl);
-      wsRef.current = ws;
-      
-      ws.onopen = () => {
-        setIsConnected(true);
-        setConnectionStatus('connected');
-        setConversation(prev => [...prev, {
-          id: Date.now(),
-          type: 'system',
-          message: 'Connected to web voice assistant'
-        }]);
-      };
-      
-      ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        
-        if (data.type === 'assistant_response') {
-          setConversation(prev => [...prev, {
-            id: Date.now(),
-            type: 'assistant',
-            message: data.text
-          }]);
-          
-          // Speak the response
-          if ('speechSynthesis' in window) {
-            const utterance = new SpeechSynthesisUtterance(data.text);
-            utterance.rate = 0.9;
-            utterance.pitch = 1;
-            utterance.volume = 0.8;
-            speechSynthesis.speak(utterance);
-            
-            setIsListening(true);
-            utterance.onend = () => setIsListening(false);
-          }
-          
-          setIsProcessing(false);
-        } else if (data.type === 'error') {
-          setError(data.text);
-          setIsProcessing(false);
-        }
-      };
-      
-      ws.onclose = () => {
-        setIsConnected(false);
-        setConnectionStatus('disconnected');
-        setConversation(prev => [...prev, {
-          id: Date.now(),
-          type: 'system',
-          message: 'Disconnected from voice assistant'
-        }]);
-      };
-      
-      ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        setError('Connection error occurred');
-        setIsConnecting(false);
-      };
-      
-      // Set up speech recognition
-      if ('webkitSpeechRecognition' in window) {
-        const recognition = new window.webkitSpeechRecognition();
-        recognitionRef.current = recognition;
-        
-        recognition.continuous = true;
-        recognition.interimResults = false;
-        recognition.lang = 'en-US';
-        
-        recognition.onresult = (event) => {
-          const transcript = event.results[event.results.length - 1][0].transcript.trim();
-          if (transcript) {
-            console.log('Speech recognized:', transcript);
-            
-            setConversation(prev => [...prev, {
-              id: Date.now(),
-              type: 'user',
-              message: transcript
-            }]);
-            
-            setIsProcessing(true);
-            
-            // Send to assistant
-            if (ws.readyState === WebSocket.OPEN) {
-              ws.send(JSON.stringify({
-                type: 'user_message',
-                text: transcript
-              }));
-            }
-          }
-        };
-        
-        recognition.onerror = (event) => {
-          console.error('Speech recognition error:', event.error);
-          if (event.error === 'not-allowed') {
-            setError('Microphone access denied. Please allow microphone access and try again.');
-          }
-        };
-        
-        recognition.onend = () => {
-          if (isConnected && !isMuted) {
-            setTimeout(() => {
-              try {
-                recognition.start();
-              } catch (e) {
-                console.log('Recognition restart failed:', e);
-              }
-            }, 100);
-          }
-        };
-        
-        // Start recognition
-        recognition.start();
-      } else {
-        setError('Speech recognition not supported in this browser');
-      }
-      
-    } catch (err) {
-      console.error('Connection error:', err);
-      setError(err.message);
-      setConnectionStatus('error');
-    } finally {
-      setIsConnecting(false);
-    }
-  };
 
   const connectToVoiceChat = async () => {
-    if (useWebVoice) {
-      return await connectToWebVoice();
-    }
-    
     setIsConnecting(true);
     setError(null);
     
@@ -311,29 +170,6 @@ const VoiceChat = ({ onBack, scrapedData }) => {
   };
 
   const disconnectFromVoiceChat = async () => {
-    if (useWebVoice) {
-      // Stop speech recognition
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-        recognitionRef.current = null;
-      }
-      
-      // Stop speech synthesis
-      if ('speechSynthesis' in window) {
-        speechSynthesis.cancel();
-      }
-      
-      // Close WebSocket
-      if (wsRef.current) {
-        wsRef.current.close();
-        wsRef.current = null;
-      }
-      
-      setIsConnected(false);
-      setConnectionStatus('disconnected');
-      return;
-    }
-    
     if (roomRef.current) {
       const roomName = roomRef.current.name;
       roomRef.current.disconnect();
@@ -354,18 +190,6 @@ const VoiceChat = ({ onBack, scrapedData }) => {
   };
 
   const toggleMute = async () => {
-    if (useWebVoice) {
-      if (recognitionRef.current) {
-        if (isMuted) {
-          recognitionRef.current.start();
-        } else {
-          recognitionRef.current.stop();
-        }
-        setIsMuted(!isMuted);
-      }
-      return;
-    }
-    
     if (room && room.localParticipant) {
       const audioTrack = room.localParticipant.getTrack(Track.Source.Microphone);
       if (audioTrack) {
@@ -406,29 +230,6 @@ const VoiceChat = ({ onBack, scrapedData }) => {
               The AI assistant can discuss and answer questions about what was scraped.
             </p>
             
-            <div className="voice-options">
-              <label className="voice-option">
-                <input
-                  type="radio"
-                  name="voiceMode"
-                  checked={useWebVoice}
-                  onChange={() => setUseWebVoice(true)}
-                />
-                <span>Web Voice (Recommended)</span>
-                <small>Uses browser speech recognition and synthesis</small>
-              </label>
-              <label className="voice-option">
-                <input
-                  type="radio"
-                  name="voiceMode"
-                  checked={!useWebVoice}
-                  onChange={() => setUseWebVoice(false)}
-                />
-                <span>LiveKit Voice</span>
-                <small>Requires LiveKit credentials</small>
-              </label>
-            </div>
-            
             {error && (
               <div className="error-message">
                 <strong>Connection Error:</strong> {error}
@@ -465,12 +266,7 @@ const VoiceChat = ({ onBack, scrapedData }) => {
                   <div className={`avatar-circle ${isListening ? 'listening' : ''}`}>
                     <span>🤖</span>
                   </div>
-                  <p>
-                    {isProcessing ? 'Processing your question...' : 
-                     isListening ? 'Assistant is speaking...' : 
-                     isMuted ? 'Microphone muted' :
-                     'Listening for your question...'}
-                  </p>
+                  <p>{isListening ? 'Assistant is speaking...' : 'Listening for your question...'}</p>
                 </div>
                 
                 <div className="voice-controls">

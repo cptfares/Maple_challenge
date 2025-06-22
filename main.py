@@ -1,11 +1,10 @@
 import logging
 import os
 from typing import Dict, Any, List
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, HttpUrl
 import uvicorn
-import json
 
 from scraper import WebScraper
 from embeddings import EmbeddingService
@@ -14,7 +13,6 @@ from vector_store import VectorStore
 from chat_service import ChatService
 from livekit_service import LiveKitService
 import simple_voice_agent
-import simple_web_voice
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -45,7 +43,6 @@ livekit_service = LiveKitService()
 
 # Set services for voice agent
 simple_voice_agent.set_services(vector_store, embedding_service)
-web_voice_assistant = simple_web_voice.set_services(vector_store, embedding_service)
 
 # Pydantic models
 class ScrapeRequest(BaseModel):
@@ -263,66 +260,6 @@ async def delete_voice_room(room_name: str):
     except Exception as e:
         logger.error(f"Error deleting voice room: {str(e)}")
         return {"success": False, "error": str(e)}
-
-@app.websocket("/ws/voice")
-async def websocket_voice_endpoint(websocket: WebSocket):
-    """WebSocket endpoint for web-based voice assistant"""
-    await websocket.accept()
-    
-    if web_voice_assistant:
-        await web_voice_assistant.add_connection(websocket)
-    
-    try:
-        # Send welcome message
-        if vector_store.is_empty():
-            welcome_msg = {
-                "type": "assistant_response",
-                "text": "Hello! Please scrape a website first so I can answer questions about its content.",
-                "has_content": False
-            }
-        else:
-            welcome_msg = {
-                "type": "assistant_response", 
-                "text": f"Hello! I'm ready to discuss the website content. I have access to {vector_store.get_size()} pieces of information. What would you like to know?",
-                "has_content": True
-            }
-        
-        await websocket.send_json(welcome_msg)
-        
-        while True:
-            # Receive message from client
-            data = await websocket.receive_json()
-            
-            if data.get("type") == "user_message":
-                user_text = data.get("text", "")
-                logger.info(f"Received user message: {user_text}")
-                
-                if web_voice_assistant:
-                    # Generate response
-                    response_data = await web_voice_assistant.generate_response(user_text)
-                    
-                    # Send response back
-                    response_msg = {
-                        "type": "assistant_response",
-                        "text": response_data["response"],
-                        "success": response_data["success"],
-                        "context_used": response_data["context_used"]
-                    }
-                    
-                    await websocket.send_json(response_msg)
-                else:
-                    await websocket.send_json({
-                        "type": "error",
-                        "text": "Voice assistant not available"
-                    })
-                    
-    except WebSocketDisconnect:
-        logger.info("WebSocket disconnected")
-    except Exception as e:
-        logger.error(f"WebSocket error: {str(e)}")
-    finally:
-        if web_voice_assistant:
-            await web_voice_assistant.remove_connection(websocket)
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))

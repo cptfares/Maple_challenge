@@ -551,47 +551,6 @@ body {
   color: #666;
 }
 
-.voice-options {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  margin: 1.5rem 0;
-  text-align: left;
-}
-
-.voice-option {
-  display: flex;
-  flex-direction: column;
-  padding: 1rem;
-  border: 2px solid #e1e5e9;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: border-color 0.2s;
-}
-
-.voice-option:hover {
-  border-color: #667eea;
-}
-
-.voice-option input[type="radio"] {
-  margin-right: 0.5rem;
-}
-
-.voice-option span {
-  font-weight: 600;
-  color: #333;
-}
-
-.voice-option small {
-  color: #666;
-  font-size: 0.8rem;
-  margin-top: 0.25rem;
-}
-
-.voice-option input[type="radio"]:checked + span {
-  color: #667eea;
-}
-
 .control-btn {
   background: white;
   border: 2px solid #e1e5e9;
