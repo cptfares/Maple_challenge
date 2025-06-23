@@ -513,8 +513,8 @@ body {
 }
 
 .conversation-item.assistant {
-  background: #e8f5e8;
-  border-left: 3px solid #4caf50;
+  background: #ffe0ef; /* light pink */
+  border-left: 3px solid #e91e63; /* deep pink */
 }
 
 .conversation-item.system {
@@ -987,8 +987,7 @@ body {
 
 .message-user {
   align-self: flex-end;
-  background: #667eea;
-  color: white;
+  position: fixed right;
 }
 
 .message-bot {
@@ -1132,5 +1131,94 @@ body {
   
   .send-btn {
     width: 100%;
+  }
+}
+
+/* --- Enhanced Chat Header Styles --- */
+.enhanced-header {
+  background: none;
+  box-shadow: none;
+  padding: 0;
+  margin-bottom: 2rem;
+}
+
+.header-gradient {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 18px;
+  box-shadow: 0 4px 24px rgba(102, 126, 234, 0.12);
+  padding: 2.5rem 2rem 2rem 2rem;
+  color: white;
+  max-width: 900px;
+  margin: 2rem auto 0 auto;
+  position: relative;
+}
+
+.header-main {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.main-title {
+  font-size: 2.7rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+  letter-spacing: -1px;
+}
+
+.subtitle {
+  font-size: 1.2rem;
+  font-weight: 400;
+  opacity: 0.95;
+  margin-bottom: 0;
+}
+
+.header-nav-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  margin-top: 1.5rem;
+}
+
+.header-back-btn {
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  border: none;
+  padding: 0.7rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.header-back-btn:hover {
+  background: rgba(255,255,255,0.25);
+}
+
+.section-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #fff;
+  text-shadow: 0 1px 4px rgba(102,126,234,0.15);
+}
+
+@media (max-width: 768px) {
+  .header-gradient {
+    padding: 1.2rem 0.5rem 1.2rem 0.5rem;
+    max-width: 100%;
+    border-radius: 0 0 18px 18px;
+  }
+  .main-title {
+    font-size: 1.5rem;
+  }
+  .subtitle {
+    font-size: 1rem;
+  }
+  .header-nav-row {
+    flex-direction: column;
+    gap: 0.7rem;
   }
 }

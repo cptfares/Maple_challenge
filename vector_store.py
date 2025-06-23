@@ -1,6 +1,7 @@
 import numpy as np
 import faiss
 import logging
+import pickle
 from typing import List, Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
@@ -97,3 +98,40 @@ class VectorStore:
     def is_empty(self) -> bool:
         """Check if the vector store is empty"""
         return len(self.chunks) == 0
+    
+    def save_to_disk(self, path_prefix: str):
+        """Save the FAISS index and chunks to disk"""
+        if self.index is not None:
+            faiss.write_index(self.index, f"{path_prefix}_index.faiss")
+        with open(f"{path_prefix}_chunks.pkl", "wb") as f:
+            pickle.dump(self.chunks, f)
+        logger.info(f"Vector store saved to {path_prefix}_index.faiss and {path_prefix}_chunks.pkl")
+
+    def load_from_disk(self, path_prefix: str):
+        """Load the FAISS index and chunks from disk"""
+        try:
+            self.index = faiss.read_index(f"{path_prefix}_index.faiss")
+            with open(f"{path_prefix}_chunks.pkl", "rb") as f:
+                self.chunks = pickle.load(f)
+            logger.info(f"Vector store loaded from {path_prefix}_index.faiss and {path_prefix}_chunks.pkl")
+            logger.info(f"Loaded vector store with {len(self.chunks)} chunks")
+        except Exception as e:
+            logger.error(f"Failed to load vector store from disk: {e}")
+            self.index = None
+            self.chunks = []
+    
+    def get_structure_info(self) -> dict:
+        """Return structure information about the stored chunks."""
+        info = {
+            'total_chunks': len(self.chunks),
+            'content_types': {},
+            'domains': {}
+        }
+        for chunk in self.chunks:
+            # Count by content type
+            ctype = chunk.get('content_type', 'unknown')
+            info['content_types'][ctype] = info['content_types'].get(ctype, 0) + 1
+            # Count by domain
+            domain = chunk.get('domain', 'unknown')
+            info['domains'][domain] = info['domains'].get(domain, 0) + 1
+        return info

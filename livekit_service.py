@@ -26,11 +26,9 @@ class LiveKitService:
         """Create a new LiveKit room for voice chat"""
         if not self.enabled:
             return None
-            
+        lkapi = api.LiveKitAPI(self.url, self.api_key, self.api_secret)
         try:
-            # Create room using LiveKit API
-            room_service = api.RoomService(self.url, self.api_key, self.api_secret)
-            
+            room_service = lkapi.room
             room = await room_service.create_room(
                 api.CreateRoomRequest(
                     name=room_name,
@@ -38,17 +36,20 @@ class LiveKitService:
                     max_participants=2,  # User + AI assistant
                 )
             )
-            
             logger.info(f"Created LiveKit room: {room_name}")
+            # Generate agent token
+            agent_token = await self.generate_token(room_name, "agent")
             return {
                 "room_name": room.name,
                 "url": self.url,
-                "created": True
+                "created": True,
+                "agent_token": agent_token
             }
-            
         except Exception as e:
             logger.error(f"Failed to create LiveKit room: {str(e)}")
             return None
+        finally:
+            await lkapi.aclose()
     
     async def generate_token(self, room_name: str, participant_name: str) -> Optional[str]:
         """Generate access token for a participant"""
@@ -76,43 +77,41 @@ class LiveKitService:
         """Delete a LiveKit room"""
         if not self.enabled:
             return False
-            
+        lkapi = api.LiveKitAPI(self.url, self.api_key, self.api_secret)
         try:
-            room_service = api.RoomService(self.url, self.api_key, self.api_secret)
+            room_service = lkapi.room
             await room_service.delete_room(api.DeleteRoomRequest(room=room_name))
             logger.info(f"Deleted LiveKit room: {room_name}")
             return True
-            
         except Exception as e:
             logger.error(f"Failed to delete LiveKit room: {str(e)}")
             return False
+        finally:
+            await lkapi.aclose()
     
-    async def start_voice_agent(self) -> bool:
+    async def start_voice_agent(self, room_name=None, agent_token=None) -> bool:
         """Start the LiveKit voice agent"""
         if not self.enabled:
             return False
-            
         try:
             # Stop existing agent if running
             await self.stop_voice_agent()
-            
             # Set environment variables for the agent
             env = os.environ.copy()
             env["LIVEKIT_API_KEY"] = self.api_key
             env["LIVEKIT_API_SECRET"] = self.api_secret
             env["LIVEKIT_URL"] = self.url
-            
-            # Start the voice agent process
+            if room_name:
+                env["AGENT_ROOM_NAME"] = room_name
+            if agent_token:
+                env["AGENT_TOKEN"] = agent_token
+            # Start the voice agent process (show logs in console)
             self.agent_process = subprocess.Popen(
-                ["python", "start_voice_agent.py"],
-                env=env,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
+                ["python", "simple_voice_agent.py", "start"],
+                env=env
             )
-            
             logger.info("Voice agent started successfully")
             return True
-            
         except Exception as e:
             logger.error(f"Failed to start voice agent: {str(e)}")
             return False

@@ -144,10 +144,23 @@ function App() {
 
   return (
     <div className="app">
-      <header className="app-header">
-        <div className="header-content">
-          <h1>Enhanced Website Chat Assistant</h1>
-          <p>Multi-site analysis, structural queries, and intelligent content discovery</p>
+      <header className="app-header enhanced-header">
+        <div className="header-gradient">
+          <div className="header-main">
+            <h1 className="main-title">Enhanced Website Chat Assistant</h1>
+            <p className="subtitle">Multi-site analysis, structural queries, and intelligent content discovery</p>
+          </div>
+          {(currentMode === 'chat' || currentMode === 'voice') && (
+            <div className="header-nav-row">
+              <button
+                className="back-btn header-back-btn"
+                onClick={() => setCurrentMode('scrape')}
+              >
+                ← Back to Knowledge Base
+              </button>
+              <span className="section-title">Enhanced Knowledge Assistant</span>
+            </div>
+          )}
         </div>
       </header>
 
@@ -160,6 +173,33 @@ function App() {
             </div>
 
             {/* Multi-site overview */}
+            {(scrapedData || (scrapedSites && scrapedSites.total_sites > 0)) && (
+              <div className="mode-selection">
+                <h3>Knowledge Base Ready - Choose Interaction Mode:</h3>
+                <div className="mode-buttons">
+                  <button
+                    onClick={() => setCurrentMode('chat')}
+                    className="mode-btn chat-btn"
+                  >
+                    <div className="mode-icon">💬</div>
+                    <div className="mode-content">
+                      <h4>Enhanced Chat</h4>
+                      <span>Multi-site queries, structure analysis, content discovery</span>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setCurrentMode('voice')}
+                    className="mode-btn talk-btn"
+                  >
+                    <div className="mode-icon">🎙️</div>
+                    <div className="mode-content">
+                      <h4>Voice Assistant</h4>
+                      <span>Conversational AI with knowledge base access</span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            )}
             {scrapedSites && scrapedSites.total_sites > 0 && (
               <div className="sites-overview">
                 <h3>Active Knowledge Base ({scrapedSites.total_sites} websites)</h3>
@@ -196,32 +236,34 @@ function App() {
             )}
 
             <form onSubmit={handleScrape} className="scrape-form">
-              <div className="form-group">
-                <label htmlFor="url">Website URL:</label>
-                <input
-                  type="url"
-                  id="url"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  placeholder="https://example.com"
-                  required
-                />
+              <div className="input-row">
+                <div className="input-group">
+                  <label htmlFor="url">Website URL:</label>
+                  <input
+                    type="url"
+                    id="url"
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    placeholder="https://example.com"
+                    required
+                    className="url-input"
+                  />
+                </div>
+                <div className="input-group depth-group">
+                  <label htmlFor="maxDepth">Crawl Depth:</label>
+                  <select
+                    id="maxDepth"
+                    value={maxDepth}
+                    onChange={(e) => setMaxDepth(e.target.value)}
+                    className="depth-select"
+                  >
+                    <option value={0}>Current page only</option>
+                    <option value={1}>1 level deep</option>
+                    <option value={2}>2 levels deep</option>
+                    <option value={3}>3 levels deep</option>
+                  </select>
+                </div>
               </div>
-
-              <div className="form-group">
-                <label htmlFor="maxDepth">Crawl Depth:</label>
-                <select
-                  id="maxDepth"
-                  value={maxDepth}
-                  onChange={(e) => setMaxDepth(e.target.value)}
-                >
-                  <option value={0}>Current page only</option>
-                  <option value={1}>1 level deep</option>
-                  <option value={2}>2 levels deep</option>
-                  <option value={3}>3 levels deep</option>
-                </select>
-              </div>
-
               <button
                 type="submit"
                 disabled={isScrapingLoading}
@@ -259,33 +301,6 @@ function App() {
               </div>
             )}
 
-            {(scrapedData || (scrapedSites && scrapedSites.total_sites > 0)) && (
-              <div className="mode-selection">
-                <h3>Knowledge Base Ready - Choose Interaction Mode:</h3>
-                <div className="mode-buttons">
-                  <button
-                    onClick={() => setCurrentMode('chat')}
-                    className="mode-btn chat-btn"
-                  >
-                    <div className="mode-icon">💬</div>
-                    <div className="mode-content">
-                      <h4>Enhanced Chat</h4>
-                      <span>Multi-site queries, structure analysis, content discovery</span>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => setCurrentMode('voice')}
-                    className="mode-btn talk-btn"
-                  >
-                    <div className="mode-icon">🎙️</div>
-                    <div className="mode-content">
-                      <h4>Voice Assistant</h4>
-                      <span>Conversational AI with knowledge base access</span>
-                    </div>
-                  </button>
-                </div>
-              </div>
-            )}
           </section>
         ) : currentMode === 'chat' ? (
           <section className="chat-mode">
@@ -313,92 +328,112 @@ function App() {
                         ))}
                       </select>
                     </div>
-                    <div className="query-types">
-                      <button 
-                        className="query-type-btn"
-                        onClick={() => setQuestion('How many pages are there in total?')}
-                      >
-                        Structure Query
-                      </button>
-                      <button 
-                        className="query-type-btn"
-                        onClick={() => setQuestion('What external domains are linked?')}
-                      >
-                        Link Analysis
-                      </button>
-                      <button 
-                        className="query-type-btn"
-                        onClick={() => setQuestion('What API endpoints were found?')}
-                      >
-                        API Discovery
-                      </button>
-                      <button 
-                        className="query-type-btn"
-                        onClick={clearMessages}
-                      >
-                        Clear Chat
-                      </button>
-                    </div>
                   </div>
                 )}
               </div>
             </div>
 
             <div className="chat-container">
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.5rem' }}>
+                {messages.length > 0 && (
+                  <button onClick={clearMessages} className="clear-btn">Clear Chat</button>
+                )}
+              </div>
               <div className="messages">
                 {messages.length === 0 ? (
-                  <div className="welcome-message">
-                    <div className="capabilities-grid">
-                      <div className="capability">
-                        <h4>📊 Structural Analysis</h4>
-                        <p>Ask about website architecture, page counts, navigation structure</p>
-                        <em>"How many pages are there?" "What's the site structure?"</em>
-                      </div>
-                      <div className="capability">
-                        <h4>🔗 Link Intelligence</h4>
-                        <p>Discover external connections, API endpoints, resource links</p>
-                        <em>"What external domains are linked?" "Find API endpoints"</em>
-                      </div>
-                      <div className="capability">
-                        <h4>🌐 Multi-Site Queries</h4>
-                        <p>Compare content across multiple websites in your knowledge base</p>
-                        <em>"Compare these sites" "What topics overlap?"</em>
-                      </div>
-                      <div className="capability">
-                        <h4>🖼️ Content Discovery</h4>
-                        <p>Find images, documents, and multimedia resources</p>
-                        <em>"What images are available?" "List downloadable content"</em>
-                      </div>
-                    </div>
+                  <div className="welcome-message" style={{textAlign: 'center', color: '#666', padding: '2rem 0'}}>
+                    Ask anything you need to know about the knowledge base of the websites you add.
                   </div>
                 ) : (
-                  messages.map((message, index) => (
-                    <div key={index} className={`message ${message.type}`}>
-                      <div className="message-content">
-                        <p>{message.content}</p>
-                        {message.sources && message.sources.length > 0 && (
-                          <div className="sources">
-                            <small>Sources: {message.sources.join(', ')}</small>
-                          </div>
-                        )}
-                        <span className="timestamp">{message.timestamp}</span>
+                  messages.map((message, index) => {
+                    const isUser = message.type === 'user';
+                    const isBot = message.type === 'assistant' || message.type === 'bot';
+                    return (
+                      <div
+                        key={index}
+                        className={`message message-${message.type} ${isUser ? 'align-right' : isBot ? 'align-left' : ''}`}
+                        style={{
+                          display: 'flex',
+                          flexDirection: isUser ? 'row-reverse' : 'row',
+                          alignItems: 'flex-end',
+                          marginBottom: '1rem',
+                          justifyContent: isUser ? 'flex-end' : 'flex-start',
+                          width: '100%',
+                        }}
+                      >
+                        <div
+                          className="message-content"
+                          style={{
+                            minWidth: 0,
+                            flex: '1 1 0%',
+                            background: isUser ? '#667eea' : '#f1f3f4',
+                            color: isUser ? 'white' : '#333',
+                            borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                            padding: '1rem',
+                            maxWidth: '70%',
+                            marginLeft: isUser ? 'auto' : 0,
+                            marginRight: isUser ? 0 : 'auto',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                            border: isUser ? 'none' : '1px solid #e1e5e9',
+                            alignSelf: isUser ? 'flex-end' : 'flex-start',
+                          }}
+                        >
+                          <p style={{ margin: 0 }}>{message.content}</p>
+                          {message.sources && message.sources.length > 0 && (
+                            <div className="sources" style={{ marginTop: 8 }}>
+                              <strong>Sources:</strong>{' '}
+                              {message.sources.map((source, idx) => {
+                                let url = source;
+                                let label = source;
+                                try {
+                                  url = source;
+                                  label = new URL(source).hostname;
+                                } catch {}
+                                return (
+                                  <a
+                                    key={idx}
+                                    href={url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="source-link"
+                                    style={{
+                                      background: '#e3f2fd',
+                                      color: '#1976d2',
+                                      padding: '2px 8px',
+                                      borderRadius: '6px',
+                                      marginRight: 8,
+                                      textDecoration: 'none',
+                                      fontWeight: 600,
+                                      fontSize: '0.95em',
+                                    }}
+                                  >
+                                    {label}
+                                  </a>
+                                );
+                              })}
+                            </div>
+                          )}
+                          <span className="timestamp" style={{ fontSize: '0.8em', color: '#999', marginTop: 4, display: 'block', textAlign: isUser ? 'right' : 'left' }}>{message.timestamp}</span>
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
 
-              <form onSubmit={handleChat} className="chat-form">
+              <form onSubmit={handleChat} className="chat-input-group">
                 <input
                   type="text"
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
                   placeholder="Ask about content, structure, links, or cross-site analysis..."
                   disabled={isChatLoading}
+                  className="chat-input"
                 />
                 <button
                   type="submit"
                   disabled={isChatLoading || !question.trim()}
+                  className="send-btn"
                 >
                   {isChatLoading ? 'Processing...' : 'Send'}
                 </button>

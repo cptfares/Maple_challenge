@@ -13,6 +13,7 @@ from vector_store import VectorStore
 from chat_service import ChatService
 from livekit_service import LiveKitService
 import simple_voice_agent
+from enhanced_chat import router as enhanced_chat_router
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -32,6 +33,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include the enhanced chat router
+app.include_router(enhanced_chat_router)
 
 # Initialize services
 scraper = EnhancedWebScraper()
@@ -130,8 +134,9 @@ async def scrape_website(request: ScrapeRequest):
             raise HTTPException(status_code=500, detail="Failed to generate embeddings")
         
         vector_store.add_embeddings(embeddings, all_chunks)
-        
-        logger.info(f"Successfully processed {len(scraped_pages)} pages, created {len(all_chunks)} chunks")
+        # Save vector store to disk for voice agent
+        vector_store.save_to_disk("vector_store_data")
+        logger.info(f"Successfully processed {len(scraped_pages)} pages, created {len(all_chunks)} chunks and saved vector store to disk")
         
         return ScrapeResponse(
             success=True,
@@ -390,8 +395,8 @@ async def create_voice_room(request: VoiceRoomRequest):
         if not room_info:
             raise HTTPException(status_code=500, detail="Failed to create voice room")
         
-        # Start the voice agent
-        agent_started = await livekit_service.start_voice_agent()
+        # Start the voice agent with room name and agent token
+        agent_started = await livekit_service.start_voice_agent(room_name=request.room_name, agent_token=room_info.get("agent_token"))
         if not agent_started:
             raise HTTPException(status_code=500, detail="Failed to start voice agent")
         

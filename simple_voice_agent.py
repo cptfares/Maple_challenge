@@ -8,167 +8,141 @@ import os
 import json
 from typing import Dict, Any, List, Optional
 from livekit import api, rtc
-from livekit.agents import JobContext, WorkerOptions, cli
-from livekit.plugins import openai
-from langchain_openai import ChatOpenAI
+from livekit.agents import Agent, AgentSession, JobContext, function_tool
+from livekit.plugins import openai, silero
+from vector_store import VectorStore
+from embeddings import EmbeddingService
+
+# Use the shared services set by set_services
+vector_store = None
+embedding_service = None
+
+VECTOR_STORE_PATH_PREFIX = os.getenv("VECTOR_STORE_PATH_PREFIX", "vector_store_data")
+
+def set_services(vs, es):
+    global vector_store, embedding_service
+    vector_store = vs
+    embedding_service = es
+
+# Load from disk if not set
+if vector_store is None:
+    vector_store = VectorStore()
+    vector_store.load_from_disk(VECTOR_STORE_PATH_PREFIX)
+if embedding_service is None:
+    embedding_service = EmbeddingService()
 
 logger = logging.getLogger(__name__)
 
-class WebsiteVoiceBot:
-    def __init__(self, vector_store, embedding_service):
-        self.vector_store = vector_store
-        self.embedding_service = embedding_service
-        self.openai_client = ChatOpenAI(
-            model="gpt-4o",
-            temperature=0.3,
-            openai_api_key=os.getenv("OPENAI_API_KEY")
-        )
-        
-    async def get_website_context(self, question: str) -> str:
-        """Get relevant website content for the question"""
-        if not self.vector_store or self.vector_store.is_empty():
-            return "No website content is currently available."
-        
-        try:
-            # Generate embedding for the question
-            question_embeddings = await self.embedding_service.generate_embeddings([question])
-            if not question_embeddings:
-                return "Unable to process your question."
-            
-            # Search for relevant chunks
-            relevant_chunks = self.vector_store.search(question_embeddings[0], top_k=3)
-            
-            if not relevant_chunks:
-                return "No relevant content found for your question."
-            
-            # Format context
-            context_parts = []
-            for chunk in relevant_chunks:
-                context_parts.append(f"From the website: {chunk['text'][:200]}...")
-            
-            return "\n".join(context_parts)
-            
-        except Exception as e:
-            logger.error(f"Error getting website context: {str(e)}")
-            return "Sorry, I encountered an error accessing the website content."
+async def get_website_context(question: str, top_k: int = 3):
+    # Always reload the vector store from disk to get the latest data
+    global vector_store
+    vector_store.load_from_disk(VECTOR_STORE_PATH_PREFIX)
+    logger.info(f"get_website_context called with question: {question}")
+    print(f"get_website_context called with question: {question}")
+    if not vector_store:
+        logger.error("Vector store is not set. Did you call set_services?")
+        return "No website content is currently available."
+    if not embedding_service:
+        logger.error("Embedding service is not set. Did you call set_services?")
+        return "No website content is currently available."
+    if vector_store.is_empty():
+        logger.warning("Vector store is empty.")
+        return "No website content is currently available."
+    try:
+        question_embedding = await embedding_service.generate_embeddings([question])
+        logger.info(f"Generated embedding for question: {question} -> {question_embedding}")
+        if not question_embedding:
+            logger.warning("Failed to generate embeddings for the question.")
+            return "Unable to process your question."
+        relevant_chunks = vector_store.search(question_embedding[0], top_k=top_k)
+        logger.info(f"Relevant chunks found: {relevant_chunks}")
+        if not relevant_chunks:
+            logger.info("No relevant content found for the question.")
+            return "No relevant content found for your question."
+        # Format context like chat_service.py
+        context_parts = []
+        sources = set()
+        for chunk in relevant_chunks:
+            context_parts.append(f"Content: {chunk['text']}")
+            if 'url' in chunk:
+                sources.add(chunk['url'])
+        context = "\n\n".join(context_parts)
+        return context
+    except Exception as e:
+        logger.error(f"Error getting website context: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return f"Error: {str(e)}"
 
-    async def generate_response(self, user_message: str) -> str:
-        """Generate a response using website context"""
-        try:
-            # Get relevant context
-            context = await self.get_website_context(user_message)
-            
-            # Create prompt
-            system_prompt = """You are a helpful voice assistant discussing website content. 
-            Be conversational, friendly, and keep responses to 2-3 sentences since this is voice interaction.
-            Use the provided context to answer questions accurately."""
-            
-            user_prompt = f"""Context from website: {context}
-            
-            User question: {user_message}
-            
-            Please provide a helpful, conversational response."""
-            
-            # Get response from OpenAI
-            response = self.openai_client.invoke([
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ])
-            
-            return response.content
-            
-        except Exception as e:
-            logger.error(f"Error generating response: {str(e)}")
-            return "I'm sorry, I encountered an error processing your request."
-
-# Global references
-bot_instance = None
-
-def set_services(vector_store, embedding_service):
-    """Set the services for the voice bot"""
-    global bot_instance
-    bot_instance = WebsiteVoiceBot(vector_store, embedding_service)
+@function_tool
+async def lookup_website_content(question: str):
+    """
+    Use this tool to answer ANY user question about the website. 
+    This tool returns the most relevant content from the website for the given question.
+    """
+    logger.info(f"lookup_website_content triggered with question: {question}")
+    print(f"lookup_website_content triggered with question: {question}")
+    context = await get_website_context(question)
+    logger.info(f"Context returned: {context}")
+    print(f"Context returned: {context}")
+    return context  # Return a string, not a dict
 
 async def entrypoint(ctx: JobContext):
-    """Main entrypoint for the voice agent"""
-    logger.info("Starting simple voice agent")
-    
-    if not bot_instance:
-        logger.error("Bot instance not initialized")
-        return
-    
-    room = ctx.room
-    
-    # TTS for responses
-    tts = openai.TTS(voice="alloy")
-    
-    async def handle_message(message_text: str, participant: rtc.RemoteParticipant):
-        """Handle incoming text message and respond with voice"""
-        logger.info(f"Received message: {message_text}")
-        
-        # Generate response
-        response = await bot_instance.generate_response(message_text)
-        logger.info(f"Generated response: {response}")
-        
-        # Send response back as text first (for conversation display)
-        response_data = json.dumps({
-            "type": "assistant_response", 
-            "text": response
-        })
-        await room.local_participant.publish_data(response_data.encode())
-        
-        # Convert to speech and play
+    logger.info(">>> entrypoint() called in simple_voice_agent.py")
+    print(">>> entrypoint() called in simple_voice_agent.py")
+    try:
+        await ctx.connect()
+        # Log the registered tools and their schemas
+        tool_list = [lookup_website_content]
+        logger.info(f"Registering tools: {[t.__name__ for t in tool_list]}")
+        for t in tool_list:
+            logger.info(f"Tool {t.__name__} doc: {t.__doc__}")
+        agent = Agent(
+            instructions=(
+                "You are a friendly, helpful, and polite voice assistant. "
+                "Always greet the user and be nice. "
+                "For EVERY user question, you MUST use the lookup_website_content tool to retrieve the answer. "
+                "If the answer is not in the website content, politely say you don't know or that the information is not available. "
+                "Do not make up information or hallucinate."
+            ),
+            tools=tool_list,
+        )
+        session = AgentSession(
+            vad=silero.VAD.load(),
+            stt=openai.STT(),
+            llm=openai.LLM(model="gpt-4o-mini"),
+            tts=openai.TTS(voice="alloy"),
+        )
+        await session.start(agent=agent, room=ctx.room)
+        logger.info("Agent session started, generating greeting reply...")
+        print("Agent session started, generating greeting reply...")
+        reply = await session.generate_reply(instructions="Greet the user warmly and explain you can answer questions about the website content. If you don't know something, say so politely.")
+        logger.info(f"Agent spoke: {reply}")
+        print(f"Agent spoke: {reply}")
+        # Send the reply as a data message to the room (for frontend display)
+        import json
         try:
-            # Create audio track first
-            audio_source = rtc.AudioSource(sample_rate=24000, num_channels=1)
-            audio_track = rtc.LocalAudioTrack.create_audio_track("assistant_voice", audio_source)
-            
-            # Publish the audio track
-            publication = await room.local_participant.publish_track(audio_track, rtc.TrackPublishOptions())
-            logger.info(f"Published audio track: {publication.sid}")
-            
-            # Generate audio and stream it
-            audio_stream = tts.synthesize(response)
-            
-            async for audio_frame in audio_stream:
-                await audio_source.capture_frame(audio_frame)
-                
-            logger.info("Audio streaming completed")
-                
+            if hasattr(ctx, "room") and ctx.room is not None and hasattr(ctx.room, "local_participant"):
+                await ctx.room.local_participant.publish_data(
+                    json.dumps({"type": "assistant_response", "text": reply}).encode("utf-8")
+                )
+                logger.info("Sent assistant_response to frontend via data channel")
         except Exception as e:
-            logger.error(f"Error with TTS/Audio: {str(e)}")
-            import traceback
-            traceback.print_exc()
-    
-    # Handle data messages (text from frontend)
-    @room.on("data_received")
-    def on_data_received(data: bytes, participant: rtc.RemoteParticipant):
-        try:
-            message = json.loads(data.decode())
-            if message.get("type") == "text_message":
-                # Handle the message asynchronously
-                asyncio.create_task(handle_message(message.get("text", ""), participant))
-        except Exception as e:
-            logger.error(f"Error processing data: {str(e)}")
-    
-    # Send greeting when participant joins
-    @room.on("participant_connected")
-    def on_participant_connected(participant: rtc.RemoteParticipant):
-        if participant.identity != "agent":
-            logger.info(f"Participant connected: {participant.identity}")
-            # Send greeting
-            if bot_instance.vector_store and not bot_instance.vector_store.is_empty():
-                greeting = f"Hello! I can answer questions about the website content. I have access to {bot_instance.vector_store.get_size()} pieces of information."
-            else:
-                greeting = "Hello! Please scrape a website first so I can answer questions about its content."
-            
-            asyncio.create_task(handle_message(greeting, participant))
-    
-    logger.info("Voice agent is ready and waiting for participants")
-    
-    # Keep the agent running
-    while True:
-        await asyncio.sleep(1)
+            logger.error(f"Failed to send assistant_response: {e}")
+    except Exception as e:
+        logger.error(f"Exception in entrypoint: {e}")
+        import traceback
+        traceback.print_exc()
+        print(f"Exception in entrypoint: {e}")
 
 if __name__ == "__main__":
-    cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint))
+    import sys
+    from livekit.agents import cli, WorkerOptions
+    if len(sys.argv) > 1 and sys.argv[1] == "start":
+        cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint))
+    elif len(sys.argv) > 1 and sys.argv[1] == "dev":
+        cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint), dev=True)
+    elif len(sys.argv) > 1 and sys.argv[1] == "console":
+        cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint), console=True)
+    else:
+        print("Usage: python simple_voice_agent.py [start|dev|console]")

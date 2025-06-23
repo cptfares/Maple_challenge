@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Room, connect, createLocalTracks, Track } from 'livekit-client';
+import { Room, createLocalTracks, Track } from 'livekit-client';
 
 const API_BASE = '/api';
 
@@ -362,10 +362,6 @@ const VoiceChat = ({ onBack, scrapedData }) => {
                   )}
                 </div>
                 
-                <div className="conversation-footer">
-                  <p>💬 Speak naturally about the website content</p>
-                  <p>🎯 Ask questions, request summaries, or discuss specific topics</p>
-                </div>
               </div>
             </div>
           </div>
