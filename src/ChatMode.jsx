@@ -1,5 +1,25 @@
 import React from 'react';
 
+// Helper to render message content with images
+function renderMessageWithImages(content) {
+  // Regex to match image URLs
+  const imageRegex = /(https?:\/\/[\w\-._~:/?#\[\]@!$&'()*+,;=%]+\.(?:jpg|jpeg|png|gif|webp|svg|bmp))/gi;
+  const parts = content.split(imageRegex);
+  return parts.map((part, i) => {
+    if (imageRegex.test(part)) {
+      return (
+        <img
+          key={i}
+          src={part}
+          alt="scraped"
+          style={{ maxWidth: 200, maxHeight: 200, margin: 4, borderRadius: 8, display: 'block' }}
+        />
+      );
+    }
+    return <span key={i}>{part}</span>;
+  });
+}
+
 function ChatMode({
   messages,
   question,
@@ -88,7 +108,8 @@ function ChatMode({
                       alignSelf: isUser ? 'flex-end' : 'flex-start',
                     }}
                   >
-                    <p style={{ margin: 0 }}>{message.content}</p>
+                    {/* Render message content with images */}
+                    <p style={{ margin: 0 }}>{renderMessageWithImages(message.content)}</p>
                     {message.sources && message.sources.length > 0 && (
                       <div className="sources" style={{ marginTop: 8 }}>
                         <strong>Sources:</strong>{' '}
