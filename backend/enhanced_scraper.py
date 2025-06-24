@@ -30,12 +30,11 @@ class EnhancedWebScraper:
             return False
     
     def _is_api_endpoint(self, url: str) -> bool:
-        """Check if URL looks like an API endpoint"""
         api_indicators = ['/api/', '.json', '/v1/', '/v2/', '/graphql', '/rest/']
         return any(indicator in url.lower() for indicator in api_indicators)
     
     def _is_image_url(self, url: str) -> bool:
-        """Check if URL is an image"""
+
         image_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp'}
         return any(url.lower().endswith(ext) for ext in image_extensions)
     
@@ -177,7 +176,8 @@ class EnhancedWebScraper:
                     'success': True
                 }
         except Exception as e:
-            logger.error(f"Playwright error for {url}: {str(e)}")
+            # Suppress Playwright error output in terminal
+            logger.debug(f"Playwright error for {url}: {str(e)}")
             return None
     
     def _scrape_with_requests(self, url: str) -> Dict[str, Any]:
@@ -204,9 +204,13 @@ class EnhancedWebScraper:
         except Exception as e:
             logger.error(f"Requests error for {url}: {str(e)}")
             return None
-    
+
     async def _scrape_single_page(self, url: str) -> Dict[str, Any]:
-        """Scrape a single page with enhanced content type support"""
+        """
+        Scrape a single page and determine the method to use based on the URL type.
+        Chooses between Playwright for dynamic content, requests for static content,
+        or specific handlers for API endpoints and images.
+        """
         logger.info(f"Scraping: {url}")
         
         if self._is_api_endpoint(url):
@@ -237,9 +241,15 @@ class EnhancedWebScraper:
             'success': False,
             'error': 'Failed to scrape with both methods'
         }
-    
+
     async def scrape_website(self, start_url: str, max_depth: int = 2) -> Dict[str, Any]:
-        """Scrape website with enhanced structure analysis"""
+        """
+        Scrape website with enhanced structure analysis.
+        This function is used to scrape a website starting from a given URL, 
+        it manages the depth of scraping and collects various statistics about the site structure, 
+        including internal and external links, API endpoints, images, and content types.
+        It uses a breadth-first search approach to explore the site, ensuring that it does not exceed the max depth.
+        """
         scraped_pages = []
         visited_urls = set()
         urls_to_scrape = [(start_url, 0)]
@@ -327,9 +337,12 @@ class EnhancedWebScraper:
             'structure': site_structure,
             'success': True
         }
-    
+
     def get_all_scraped_sites(self) -> Dict[str, Any]:
-        """Get information about all scraped sites"""
+        """
+        Get information about all scraped sites, including the total number of sites, the number of pages scraped for each site,
+        the structure of each site, and the time when each site was last scraped. Returns a dictionary containing this information.
+        """
         return {
             'total_sites': len(self.scraped_sites),
             'sites': {domain: {
@@ -338,9 +351,11 @@ class EnhancedWebScraper:
                 'scraped_at': data['scraped_at']
             } for domain, data in self.scraped_sites.items()}
         }
-    
+
     def get_aggregated_content(self) -> List[Dict[str, Any]]:
-        """Get content from all scraped sites aggregated together"""
+        """
+        Get content from all scraped sites aggregated together. It collects content from each page across all sites.
+        """
         all_pages = []
         for domain, data in self.scraped_sites.items():
             for page in data['pages']:

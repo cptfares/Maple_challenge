@@ -33,10 +33,20 @@ async def scrape_website(request: ScrapeRequest):
                     metadata['json_keys'] = list(page['raw_data'].keys()) if isinstance(page['raw_data'], dict) else []
                 elif content_type == 'image':
                     metadata['image_filename'] = page.get('title', '')
+
+                # Append image and API links to the content if present
+                links = page.get('links', {})
+                extra_info = ""
+                if links.get('images'):
+                    extra_info += "\nImage links found on this page:\n" + "\n".join(links['images'])
+                if links.get('api'):
+                    extra_info += "\nAPI links found on this page:\n" + "\n".join(links['api'])
+                content_with_links = page['content'] + extra_info
+
                 page_chunks = chunker.chunk_text(
-                    page['content'], 
-                    page['url'], 
-                    content_type, 
+                    content_with_links,
+                    page['url'],
+                    content_type,
                     metadata
                 )
                 all_chunks.extend(page_chunks)

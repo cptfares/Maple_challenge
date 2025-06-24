@@ -1,13 +1,25 @@
 import logging
 import os
+import sys
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
+
+# Ensure environment variables are loaded from .env
+from backend import __init__
+
+# Workaround for Playwright on Windows
+if sys.platform.startswith('win'):
+    import asyncio
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 # Import routers from routes modules
 from backend.routes.scrape import router as scrape_router
 from backend.routes.chat import router as chat_router
 from backend.routes.voice import router as voice_router
+
+# Suppress asyncio NotImplementedError tracebacks for Playwright on Windows
+from backend.suppress_asyncio_tracebacks import *
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -43,3 +55,5 @@ async def root():
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
+print("[DEBUG] OPENAI_API_KEY at startup:", os.getenv("OPENAI_API_KEY"))
