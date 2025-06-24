@@ -10,8 +10,8 @@ from typing import Dict, Any, List, Optional
 from livekit import api, rtc
 from livekit.agents import Agent, AgentSession, JobContext, function_tool
 from livekit.plugins import openai, silero
-from vector_store import VectorStore
-from embeddings import EmbeddingService
+from backend.vector_store import VectorStore
+from backend.embeddings import EmbeddingService
 
 # Use the shared services set by set_services
 vector_store = None

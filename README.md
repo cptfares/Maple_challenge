@@ -1,6 +1,14 @@
-# Maple Challenge
+# Website Chat & Voice Assistant
 
-This project consists of a Python backend with FastAPI and a React frontend using Vite. It includes features for chat services, voice assistance, and web scraping.
+A full-stack project that lets you scrape websites, build a knowledge base, and interact with the content using chat or voice. The backend is built with FastAPI (Python), and the frontend uses React (Vite).
+
+## Features
+
+- **Multi-site Web Scraping:** Add multiple websites to your knowledge base with deep crawling and content chunking.
+- **AI Chat:** Ask questions about the scraped content and get intelligent answers with source references.
+- **Voice Assistant:** Join a LiveKit-powered voice room and interact with the knowledge base using speech.
+- **Structure Analysis:** Query the structure and metadata of your scraped sites (pages, APIs, images, domains, etc.).
+- **Modular Backend:** Clean, maintainable backend code organized in the `backend/` directory with FastAPI routers.
 
 ## Prerequisites
 
@@ -13,13 +21,13 @@ This project consists of a Python backend with FastAPI and a React frontend usin
 1. Clone the repository:
 ```bash
 git clone [repository-url]
-cd maplechallenge
+cd Maple_challenge_2
 ```
 
 2. Set up Python environment and install dependencies:
 ```bash
 # Create and activate a virtual environment
-py -m venv venv
+python -m venv venv
 # On Windows
 .\venv\Scripts\activate
 # On Unix or MacOS
@@ -43,13 +51,13 @@ LIVEKIT_API_SECRET=your_livekit_api_secret
 
 ## Running the Application
 
-1. Start the backend server:
+1. **Start the backend server:**
 ```bash
-# Activate virtual environment if not already activated
-uvicorn main:app --env-file .env.
+# From the project root, run:
+uvicorn backend.main:app --reload --env-file .env
 ```
 
-2. In a separate terminal, start the frontend development server:
+2. **In a separate terminal, start the frontend development server:**
 ```bash
 npm run dev
 ```
@@ -58,38 +66,27 @@ The application should now be running with:
 - Frontend: http://localhost:5173
 - Backend: http://localhost:8000
 
-## Features
-
-- Chat service with OpenAI integration
-- Voice assistance capabilities
-- Web scraping functionality
-- LiveKit integration for real-time communication
-
 ## Project Structure
 
-- `main.py`: Main FastAPI backend application
-- `chat_service.py`: Chat functionality implementation
-- `voice_assistant.py`: Voice assistance features
-- `scraper.py` & `enhanced_scraper.py`: Web scraping utilities
-- `src/`: Frontend React components and logic
+```
+Maple_challenge_2/
+│
+├── backend/              # All backend (FastAPI) code
+│   ├── main.py           # FastAPI app entry point
+│   ├── models.py         # Pydantic models
+│   ├── services.py       # Service singletons
+│   ├── routes/           # API routers (scrape, chat, voice)
+│   └── ...               # Other backend modules
+│
+├── src/                  # React frontend source code
+│   └── ...
+├── package.json
+├── vite.config.js
+├── README.md
+└── ...
+```
 
-## Development
-
-- Use `npm run dev` for frontend development with hot-reload
-- The backend will automatically reload when changes are detected
-- Use `npm run build` to create a production build of the frontend
-
-## Dependencies
-
-### Backend (Python)
-- FastAPI
-- LangChain
-- OpenAI
-- LiveKit
-- BeautifulSoup4
-- And more (see pyproject.toml)
-
-### Frontend (React)
-- React
-- LiveKit Client
-- Vite
+## Notes
+- Make sure to use the backend endpoints from `/backend/main.py`.
+- The old backend files in the project root can be deleted (see `delete_note.txt`).
+- For production, use a process manager and a production-ready ASGI server.

@@ -107,7 +107,7 @@ class LiveKitService:
                 env["AGENT_TOKEN"] = agent_token
             # Start the voice agent process (show logs in console)
             self.agent_process = subprocess.Popen(
-                ["python", "simple_voice_agent.py", "start"],
+                ["python", "-m", "backend.simple_voice_agent", "start"],
                 env=env
             )
             logger.info("Voice agent started successfully")
