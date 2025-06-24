@@ -20,8 +20,7 @@ A full-stack project that lets you scrape websites, build a knowledge base, and 
 
 1. Clone the repository:
 ```bash
-git clone [repository-url]
-cd Maple_challenge_2
+git clone https://github.com/cptfares/Maple_challenge
 ```
 
 2. Set up Python environment and install dependencies:
@@ -86,7 +85,3 @@ Maple_challenge_2/
 └── ...
 ```
 
-## Notes
-- Make sure to use the backend endpoints from `/backend/main.py`.
-- The old backend files in the project root can be deleted (see `delete_note.txt`).
-- For production, use a process manager and a production-ready ASGI server.
