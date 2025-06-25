@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import SiteMapGraph from './SiteMapGraph';
 
 function ScrapeMode({
   url,
@@ -10,8 +11,22 @@ function ScrapeMode({
   scrapeStatus,
   scrapedData,
   scrapedSites,
-  setCurrentMode
+  setCurrentMode,
+  handleDeleteSite // <-- Add this prop
 }) {
+  const [selectedSite, setSelectedSite] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+
+  const handleSiteClick = (domain, info) => {
+    setSelectedSite({ domain, info });
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setSelectedSite(null);
+  };
+
   return (
     <section className="scrape-mode">
       <div className="mode-header">
@@ -52,10 +67,22 @@ function ScrapeMode({
           <h3>Active Knowledge Base ({scrapedSites.total_sites} websites)</h3>
           <div className="sites-grid">
             {Object.entries(scrapedSites.sites).map(([domain, info]) => (
-              <div key={domain} className="site-card">
+              <div
+                key={domain}
+                className="site-card"
+                onClick={() => handleSiteClick(domain, info)}
+                style={{ cursor: 'pointer' }}
+              >
                 <div className="site-header">
                   <h4>{domain}</h4>
                   <span className="site-status">Active</span>
+                  <button
+                    className="delete-site-btn"
+                    onClick={e => { e.stopPropagation(); handleDeleteSite(domain); }}
+                    title="Delete this site from the knowledge base"
+                  >
+                    Delete
+                  </button>
                 </div>
                 <div className="site-stats">
                   <div className="stat">
@@ -145,6 +172,38 @@ function ScrapeMode({
           ) : (
             <p>Failed to process the website. Please verify the URL and try again.</p>
           )}
+        </div>
+      )}
+      {showModal && selectedSite && (
+        <div className="modal-overlay" onClick={closeModal}>
+          <div className="modal-content enhanced-modal" onClick={e => e.stopPropagation()}>
+            <button className="close-modal" onClick={closeModal}>×</button>
+            <h2 style={{marginBottom: 8, color: '#2a3b4c'}}>
+              <span role="img" aria-label="site">🌐</span> {selectedSite.domain}
+            </h2>
+            <div className="site-summary" style={{display: 'flex', gap: 32, marginBottom: 16}}>
+              <div style={{minWidth: 120}}>
+                <div style={{fontWeight: 'bold', fontSize: 18, color: '#3a5d7c'}}>Pages</div>
+                <div style={{fontSize: 22, color: '#1e90ff'}}>{selectedSite.info.total_pages}</div>
+              </div>
+              <div style={{minWidth: 120}}>
+                <div style={{fontWeight: 'bold', fontSize: 18, color: '#3a5d7c'}}>APIs</div>
+                <div style={{fontSize: 22, color: '#1e90ff'}}>{selectedSite.info.structure.total_api_endpoints}</div>
+              </div>
+              <div style={{minWidth: 120}}>
+                <div style={{fontWeight: 'bold', fontSize: 18, color: '#3a5d7c'}}>Images</div>
+                <div style={{fontSize: 22, color: '#1e90ff'}}>{selectedSite.info.structure.total_images}</div>
+              </div>
+              <div style={{minWidth: 120}}>
+                <div style={{fontWeight: 'bold', fontSize: 18, color: '#3a5d7c'}}>Types</div>
+                <div style={{fontSize: 16, color: '#555'}}>{selectedSite.info.structure.content_types.join(', ')}</div>
+              </div>
+            </div>
+            <div className="site-map-graph" style={{marginTop: 16}}>
+              <h3 style={{marginBottom: 8, color: '#2a3b4c'}}>Site Map Graph</h3>
+              <SiteMapGraph sitemap={selectedSite.info.structure.sitemap} />
+            </div>
+          </div>
         </div>
       )}
     </section>

@@ -41,6 +41,10 @@ class VectorStore:
         # Convert embeddings to numpy array
         embeddings_array = np.array(embeddings, dtype=np.float32)
         
+        # Attach embeddings to chunks before storing
+        for chunk, embedding in zip(chunks, embeddings):
+            chunk['embedding'] = embedding
+        
         # Add to FAISS index
         self.index.add(embeddings_array)
         
@@ -135,3 +139,59 @@ class VectorStore:
             domain = chunk.get('domain', 'unknown')
             info['domains'][domain] = info['domains'].get(domain, 0) + 1
         return info
+    
+    def delete_site(self, domain: str):
+        """
+        Delete all chunks and embeddings for a specific domain from the vector store.
+        
+        Args:
+            domain: The domain to delete from the store.
+        """
+        if not self.chunks or self.index is None:
+            logger.warning("Vector store is empty or not initialized.")
+            return
+
+        # Debug: print domains before deletion
+        domains_before = set()
+        for chunk in self.chunks:
+            domains_before.add(chunk.get('domain'))
+            domains_before.add(chunk.get('source_domain'))
+        logger.info(f"Domains in vector store before deletion: {domains_before}")
+
+        # Identify indices to keep (not matching the domain in domain, source_domain, or url)
+        keep_indices = [i for i, chunk in enumerate(self.chunks)
+                        if (chunk.get('domain') != domain and
+                            chunk.get('source_domain') != domain and
+                            (not chunk.get('url') or domain not in chunk.get('url')))]
+        if len(keep_indices) == len(self.chunks):
+            logger.info(f"No chunks found for domain '{domain}' to delete.")
+            return
+
+        # Keep only the chunks not matching the domain
+        self.chunks = [self.chunks[i] for i in keep_indices]
+
+        # Debug: print domains after deletion
+        domains_after = set()
+        for chunk in self.chunks:
+            domains_after.add(chunk.get('domain'))
+            domains_after.add(chunk.get('source_domain'))
+        logger.info(f"Domains in vector store after deletion: {domains_after}")
+
+        # Rebuild the FAISS index with the remaining embeddings
+        if self.chunks:
+            valid_chunks = [chunk for chunk in self.chunks if 'embedding' in chunk]
+            if len(valid_chunks) < len(self.chunks):
+                logger.warning(f"Some chunks are missing 'embedding' and will be skipped during index rebuild.")
+            if valid_chunks:
+                embeddings = [chunk['embedding'] for chunk in valid_chunks]
+                self._create_index()
+                embeddings_array = np.array(embeddings, dtype=np.float32)
+                self.index.add(embeddings_array)
+                self.chunks = valid_chunks  # Only keep valid chunks
+            else:
+                logger.warning("No valid chunks with 'embedding' remain after deletion.")
+                self.index = None
+                self.chunks = []
+        else:
+            self.index = None
+        logger.info(f"Deleted all data for domain '{domain}' from vector store.")

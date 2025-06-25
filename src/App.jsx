@@ -152,12 +152,27 @@ function App() {
   };
 
   const handleDeleteSite = async (siteId) => {
-    await fetch(`/api/sites/${siteId}`, { method: 'DELETE' });
-    setSelectedSiteId(null);
-    // Refresh sites list
-    const response = await fetch(`${API_BASE}/sites`);
-    const data = await response.json();
-    setScrapedSites(data);
+    console.log('Attempting to delete site:', siteId);
+    try {
+      const response = await fetch(`${API_BASE}/sites/${encodeURIComponent(siteId)}`, { method: 'DELETE' });
+      if (!response.ok) {
+        let errorMsg = 'Unknown error';
+        try {
+          const errorData = await response.json();
+          errorMsg = errorData.detail || response.statusText;
+        } catch {}
+        alert(`Failed to delete site: ${errorMsg}`);
+        return;
+      }
+      setSelectedSiteId(null);
+      // Refresh sites list
+      const sitesResponse = await fetch(`${API_BASE}/sites`);
+      const sitesData = await sitesResponse.json();
+      setScrapedSites(sitesData);
+    } catch (error) {
+      console.error('Delete site error:', error);
+      alert('Network error occurred while deleting the site.');
+    }
   };
 
   return (
@@ -182,7 +197,7 @@ function App() {
             scrapedData={scrapedData}
             scrapedSites={scrapedSites}
             setCurrentMode={setCurrentMode}
-            onShowSiteDetails={handleShowSiteDetails} // pass this prop
+            handleDeleteSite={handleDeleteSite} // Pass the function here
           />
         ) : currentMode === 'chat' ? (
           <ChatMode

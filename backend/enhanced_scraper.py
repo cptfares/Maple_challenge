@@ -363,3 +363,13 @@ class EnhancedWebScraper:
                 page_copy['source_domain'] = domain
                 all_pages.append(page_copy)
         return all_pages
+
+    def remove_site(self, domain: str):
+        """Remove a site from scraped_sites by domain key."""
+        logger.info(f"remove_site called with domain: {domain}")
+        logger.info(f"Current scraped_sites keys: {list(self.scraped_sites.keys())}")
+        if domain in self.scraped_sites:
+            del self.scraped_sites[domain]
+            logger.info(f"Site '{domain}' removed from scraped_sites.")
+        else:
+            logger.warning(f"Site '{domain}' not found in scraped_sites.")
