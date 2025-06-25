@@ -52,8 +52,15 @@ async def root():
 
 # You can add additional utility endpoints here if needed (e.g., /status, /sites, /structure/{domain}, /execute)
 
+# Load environment variables from .env at startup
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+    print('[INFO] .env loaded at startup')
+except ImportError:
+    print("[WARNING] python-dotenv not installed. .env file will not be loaded.")
+
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
 
-print("[DEBUG] OPENAI_API_KEY at startup:", os.getenv("OPENAI_API_KEY"))

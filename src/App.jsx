@@ -3,6 +3,7 @@ import Header from './Header.jsx';
 import ScrapeMode from './ScrapeMode.jsx';
 import ChatMode from './ChatMode.jsx';
 import VoiceChat from './VoiceChat.jsx';
+import SiteDetails from './SiteDetails.jsx';
 
 const API_BASE = '/api';
 
@@ -18,6 +19,7 @@ function App() {
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [scrapedSites, setScrapedSites] = useState(null);
   const [selectedDomain, setSelectedDomain] = useState('all');
+  const [selectedSiteId, setSelectedSiteId] = useState(null);
 
   const handleScrape = async (e) => {
     e.preventDefault();
@@ -145,11 +147,30 @@ function App() {
     setMessages([]);
   };
 
+  const handleShowSiteDetails = (siteId) => {
+    setSelectedSiteId(siteId);
+  };
+
+  const handleDeleteSite = async (siteId) => {
+    await fetch(`/api/sites/${siteId}`, { method: 'DELETE' });
+    setSelectedSiteId(null);
+    // Refresh sites list
+    const response = await fetch(`${API_BASE}/sites`);
+    const data = await response.json();
+    setScrapedSites(data);
+  };
+
   return (
     <div className="app">
       <Header currentMode={currentMode} setCurrentMode={setCurrentMode} />
       <div className="app-content">
-        {currentMode === 'scrape' ? (
+        {selectedSiteId ? (
+          <SiteDetails
+            siteId={selectedSiteId}
+            onBack={() => setSelectedSiteId(null)}
+            onDelete={handleDeleteSite}
+          />
+        ) : currentMode === 'scrape' ? (
           <ScrapeMode
             url={url}
             setUrl={setUrl}
@@ -161,6 +182,7 @@ function App() {
             scrapedData={scrapedData}
             scrapedSites={scrapedSites}
             setCurrentMode={setCurrentMode}
+            onShowSiteDetails={handleShowSiteDetails} // pass this prop
           />
         ) : currentMode === 'chat' ? (
           <ChatMode

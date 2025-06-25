@@ -69,88 +69,124 @@ function ChatMode({
             <button onClick={clearMessages} className="clear-btn">Clear Chat</button>
           )}
         </div>
-        <div className="messages">
-          {messages.length === 0 ? (
-            <div className="welcome-message" style={{textAlign: 'center', color: '#666', padding: '2rem 0'}}>
-              Ask anything you need to know about the knowledge base of the websites you add.
-            </div>
-          ) : (
-            messages.map((message, index) => {
-              const isUser = message.type === 'user';
-              const isBot = message.type === 'assistant' || message.type === 'bot';
-              return (
-                <div
-                  key={index}
-                  className={`message message-${message.type} ${isUser ? 'align-right' : isBot ? 'align-left' : ''}`}
-                  style={{
-                    display: 'flex',
-                    flexDirection: isUser ? 'row-reverse' : 'row',
-                    alignItems: 'flex-end',
-                    marginBottom: '1rem',
-                    justifyContent: isUser ? 'flex-end' : 'flex-start',
-                    width: '100%',
-                  }}
-                >
-                  <div
-                    className="message-content"
-                    style={{
-                      minWidth: 0,
-                      flex: '1 1 0%',
-                      background: isUser ? '#667eea' : '#f1f3f4',
-                      color: isUser ? 'white' : '#333',
-                      borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                      padding: '1rem',
-                      maxWidth: '70%',
-                      marginLeft: isUser ? 'auto' : 0,
-                      marginRight: isUser ? 0 : 'auto',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                      border: isUser ? 'none' : '1px solid #e1e5e9',
-                      alignSelf: isUser ? 'flex-end' : 'flex-start',
-                    }}
-                  >
-                    {/* Render message content with images */}
-                    <p style={{ margin: 0 }}>{renderMessageWithImages(message.content)}</p>
-                    {message.sources && message.sources.length > 0 && (
-                      <div className="sources" style={{ marginTop: 8 }}>
-                        <strong>Sources:</strong>{' '}
-                        {message.sources.map((source, idx) => {
-                          let url = source;
-                          let label = source;
-                          try {
-                            url = source;
-                            label = new URL(source).hostname;
-                          } catch {}
-                          return (
-                            <a
-                              key={idx}
-                              href={url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="source-link"
-                              style={{
-                                background: '#e3f2fd',
-                                color: '#1976d2',
-                                padding: '2px 8px',
-                                borderRadius: '6px',
-                                marginRight: 8,
-                                textDecoration: 'none',
-                                fontWeight: 600,
-                                fontSize: '0.95em',
-                              }}
-                            >
-                              {label}
-                            </a>
-                          );
-                        })}
-                      </div>
-                    )}
-                    <span className="timestamp" style={{ fontSize: '0.8em', color: '#999', marginTop: 4, display: 'block', textAlign: isUser ? 'right' : 'left' }}>{message.timestamp}</span>
-                  </div>
-                </div>
-              );
-            })
-          )}
+<div
+  className="messages"
+  style={{
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '1rem',
+    padding: '1rem',
+        height: '400px', // ✅ set desired height
+    overflowY: 'auto', // ✅ enable vertical scroll
+  }}
+>
+  {messages.length === 0 ? (
+    <div
+      className="welcome-message"
+      style={{
+        textAlign: 'center',
+        color: '#666',
+        padding: '2rem 0',
+      }}
+    >
+      Ask anything you need to know about the knowledge base of the websites you add.
+    </div>
+  ) : (
+    messages.map((message, index) => {
+      const isUser = message.type === 'user';
+      const isBot = message.type === 'assistant' || message.type === 'bot';
+
+      return (
+        <div
+          key={index}
+          className={`message message-${message.type} ${
+            isUser ? 'align-right' : isBot ? 'align-left' : ''
+          }`}
+          style={{
+            display: 'flex',
+            flexDirection: isUser ? 'row-reverse' : 'row',
+            alignItems: 'flex-end',
+            justifyContent: isUser ? 'flex-end' : 'flex-start',
+            width: '100%',
+          }}
+        >
+          <div
+            className="message-content"
+            style={{
+              background: isUser ? '#667eea' : '#f1f3f4',
+              color: isUser ? 'white' : '#333',
+              borderRadius: isUser ? '16px 16px 4px' : '16px 16px 16px 4px',
+              padding: '1rem',
+              marginLeft: isUser ? 'auto' : 0,
+              marginRight: isUser ? 0 : 'auto',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+              border: isUser ? 'none' : '1px solid #e1e5e9',
+              alignSelf: isUser ? 'flex-end' : 'flex-start',
+              width: 'fit-content',
+              maxWidth: '80%',
+              wordBreak: 'break-word',
+            }}
+          >
+            <p style={{ margin: 0 }}>
+              {renderMessageWithImages(message.content)}
+            </p>
+
+            {message.sources && message.sources.length > 0 && (
+              <div className="sources" style={{ marginTop: 8 }}>
+                <strong>Sources:</strong>{' '}
+                {message.sources.map((source, idx) => {
+                  let url = source;
+                  let label = source;
+                  try {
+                    url = source;
+                    label = new URL(source).hostname;
+                  } catch {}
+
+                  return (
+                    <a
+                      key={idx}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="source-link"
+                      style={{
+                        background: '#e3f2fd',
+                        color: '#1976d2',
+                        padding: '2px 8px',
+                        borderRadius: '6px',
+                        marginRight: 8,
+                        textDecoration: 'none',
+                        fontWeight: 600,
+                        fontSize: '0.95em',
+                      }}
+                    >
+                      {label}
+                    </a>
+                  );
+                })}
+              </div>
+            )}
+
+            <span
+              className="timestamp"
+              style={{
+                fontSize: '0.8em',
+                color: '#999',
+                marginTop: 4,
+                display: 'block',
+                textAlign: isUser ? 'right' : 'left',
+              }}
+            >
+              {message.timestamp}
+            </span>
+          </div>
         </div>
+      );
+    })
+  )}
+</div>
+
+
 
         <form onSubmit={handleChat} className="chat-input-group">
           <input

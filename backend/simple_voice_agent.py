@@ -114,21 +114,8 @@ async def entrypoint(ctx: JobContext):
             tts=openai.TTS(voice="alloy"),
         )
         await session.start(agent=agent, room=ctx.room)
-        logger.info("Agent session started, generating greeting reply...")
-        print("Agent session started, generating greeting reply...")
-        reply = await session.generate_reply(instructions="Greet the user warmly and explain you can answer questions about the website content. If you don't know something, say so politely.")
-        logger.info(f"Agent spoke: {reply}")
-        print(f"Agent spoke: {reply}")
-        # Send the reply as a data message to the room (for frontend display)
-        import json
-        try:
-            if hasattr(ctx, "room") and ctx.room is not None and hasattr(ctx.room, "local_participant"):
-                await ctx.room.local_participant.publish_data(
-                    json.dumps({"type": "assistant_response", "text": reply}).encode("utf-8")
-                )
-                logger.info("Sent assistant_response to frontend via data channel")
-        except Exception as e:
-            logger.error(f"Failed to send assistant_response: {e}")
+        logger.info("Agent session started.")
+        print("Agent session started.")
     except Exception as e:
         logger.error(f"Exception in entrypoint: {e}")
         import traceback

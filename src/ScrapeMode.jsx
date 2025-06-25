@@ -30,7 +30,7 @@ function ScrapeMode({
             >
               <div className="mode-icon">💬</div>
               <div className="mode-content">
-                <h4>Enhanced Chat</h4>
+                <h4>Text chat mode </h4>
                 <span>Multi-site queries, structure analysis, content discovery</span>
               </div>
             </button>
@@ -40,7 +40,7 @@ function ScrapeMode({
             >
               <div className="mode-icon">🎙️</div>
               <div className="mode-content">
-                <h4>Voice Assistant</h4>
+                <h4>Voice chat mode</h4>
                 <span>Conversational AI with knowledge base access</span>
               </div>
             </button>

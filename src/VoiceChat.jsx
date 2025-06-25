@@ -11,11 +11,10 @@ const VoiceChat = ({ onBack, scrapedData }) => {
   const [isMuted, setIsMuted] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState('disconnected');
   const [isListening, setIsListening] = useState(false);
-  const [conversation, setConversation] = useState([]);
-  const [currentMessage, setCurrentMessage] = useState('');
   
   const audioRef = useRef(null);
   const roomRef = useRef(null);
+  const localAudioTrackRef = useRef(null);
 
   const connectToVoiceChat = async () => {
     setIsConnecting(true);
@@ -48,22 +47,12 @@ const VoiceChat = ({ onBack, scrapedData }) => {
         console.log('Connected to voice chat');
         setIsConnected(true);
         setConnectionStatus('connected');
-        setConversation(prev => [...prev, {
-          id: Date.now(),
-          type: 'system',
-          message: 'Connected to AI assistant. You can start speaking!'
-        }]);
       });
       
       livekitRoom.on('disconnected', () => {
         console.log('Disconnected from voice chat');
         setIsConnected(false);
         setConnectionStatus('disconnected');
-        setConversation(prev => [...prev, {
-          id: Date.now(),
-          type: 'system',
-          message: 'Disconnected from voice assistant'
-        }]);
       });
       
       livekitRoom.on('trackSubscribed', (track, publication, participant) => {
@@ -90,23 +79,6 @@ const VoiceChat = ({ onBack, scrapedData }) => {
         }
       });
 
-      livekitRoom.on('dataReceived', (payload, participant) => {
-        try {
-          const data = JSON.parse(new TextDecoder().decode(payload));
-          console.log('Data received:', data);
-          
-          if (data.type === 'assistant_response' && data.text) {
-            setConversation(prev => [...prev, {
-              id: Date.now(),
-              type: 'assistant',
-              message: data.text
-            }]);
-          }
-        } catch (e) {
-          console.error('Error parsing data:', e);
-        }
-      });
-
       // Handle speech recognition
       let recognition = null;
       if ('webkitSpeechRecognition' in window) {
@@ -119,13 +91,6 @@ const VoiceChat = ({ onBack, scrapedData }) => {
           const transcript = event.results[event.results.length - 1][0].transcript;
           console.log('Speech recognized:', transcript);
           
-          // Add user message to conversation
-          setConversation(prev => [...prev, {
-            id: Date.now(),
-            type: 'user',
-            message: transcript
-          }]);
-
           // Send message to agent via data channel
           try {
             const message = JSON.stringify({
@@ -173,15 +138,25 @@ const VoiceChat = ({ onBack, scrapedData }) => {
       // Connect with token
       await livekitRoom.connect(data.url, data.token);
       
-      // Enable microphone
+      // Enable microphone only after connected
       try {
         const tracks = await createLocalTracks({
           audio: true,
           video: false,
         });
-        
+        console.log('createLocalTracks result:', tracks);
         if (tracks && tracks.length > 0) {
-          await livekitRoom.localParticipant.publishTrack(tracks[0]);
+          const pub = await livekitRoom.localParticipant.publishTrack(tracks[0]);
+          // Store the publication ref for mute/unmute
+          localAudioTrackRef.current = pub;
+          console.log('Audio track publication after publish:', pub);
+          // Log all possible track-related properties for debugging
+          console.log('localParticipant properties:', Object.keys(livekitRoom.localParticipant));
+          console.log('audioTrackPublications:', livekitRoom.localParticipant.audioTrackPublications);
+          console.log('tracks:', livekitRoom.localParticipant.tracks);
+          console.log('audioTracks:', livekitRoom.localParticipant.audioTracks);
+        } else {
+          console.error('No tracks returned from createLocalTracks.');
         }
       } catch (trackError) {
         console.error('Microphone access error:', trackError);
@@ -226,26 +201,49 @@ const VoiceChat = ({ onBack, scrapedData }) => {
   };
 
   const toggleMute = async () => {
-    if (room && room.localParticipant) {
-      const audioTrack = room.localParticipant.getTrack(Track.Source.Microphone);
-      if (audioTrack) {
-        await audioTrack.setMuted(!isMuted);
-        setIsMuted(!isMuted);
-        
+    if (room && room.localParticipant && room.localParticipant.audioTrackPublications) {
+      // Get the first audio publication
+      const pubArr = Array.from(room.localParticipant.audioTrackPublications.values());
+      const pub = pubArr[0];
+      if (pub && pub.track) {
+        // Use mute/unmute methods instead of setMuted
+        if (typeof pub.track.mute === 'function' && typeof pub.track.unmute === 'function') {
+          if (!isMuted) {
+            await pub.track.mute();
+          } else {
+            await pub.track.unmute();
+          }
+          setIsMuted(!isMuted);
+        } else {
+          console.error('Track does not have mute/unmute. Track object:', pub.track);
+        }
         // Also control speech recognition
         if (roomRef.current && roomRef.current.recognition) {
+          const recognition = roomRef.current.recognition;
           if (!isMuted) {
-            // About to mute - stop recognition
-            roomRef.current.recognition.stop();
+            recognition.stop();
           } else {
-            // About to unmute - start recognition
-            try {
-              roomRef.current.recognition.start();
-            } catch (error) {
-              console.error('Error starting recognition after unmute:', error);
+            // Only start if not already running
+            if (typeof recognition.start === 'function' && recognition && recognition._isStarted !== true) {
+              try {
+                recognition.start();
+                recognition._isStarted = true;
+              } catch (error) {
+                console.error('Error starting recognition after unmute:', error);
+              }
             }
           }
         }
+      } else {
+        console.warn('No local audio track publication available to mute/unmute.');
+        if (room && room.localParticipant) {
+          console.warn('audioTrackPublications:', room.localParticipant.audioTrackPublications);
+        }
+      }
+    } else {
+      console.warn('No audio track available to mute/unmute.');
+      if (room && room.localParticipant) {
+        console.warn('audioTrackPublications:', room.localParticipant.audioTrackPublications);
       }
     }
   };
@@ -263,7 +261,7 @@ const VoiceChat = ({ onBack, scrapedData }) => {
     <div className="voice-chat">
       <div className="voice-header">
         <button onClick={onBack} className="back-btn">
-          ← Back to Chat
+         ← Back to Knowledge Base
         </button>
         <div className="voice-info">
           <h3>Voice Assistant</h3>
@@ -311,8 +309,8 @@ const VoiceChat = ({ onBack, scrapedData }) => {
               <span>Connected to Voice Assistant</span>
             </div>
             
-            <div className="voice-layout">
-              <div className="voice-visualization">
+            <div className="voice-layout" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '350px' }}>
+              <div className="voice-visualization" style={{ margin: '0 auto' }}>
                 <div className="voice-avatar">
                   <div className={`avatar-circle ${isListening ? 'listening' : ''}`}>
                     <span>🤖</span>
@@ -325,9 +323,8 @@ const VoiceChat = ({ onBack, scrapedData }) => {
                     onClick={toggleMute}
                     className={`control-btn ${isMuted ? 'muted' : ''}`}
                   >
-                    {isMuted ? '🔇' : '🎤'} {isMuted ? 'Unmute' : 'Mute'}
+                    {isMuted ? '🔇 Unmute' : '🎤 Mute'}
                   </button>
-                  
                   <button
                     onClick={disconnectFromVoiceChat}
                     className="control-btn disconnect"
@@ -335,33 +332,6 @@ const VoiceChat = ({ onBack, scrapedData }) => {
                     📞 End Call
                   </button>
                 </div>
-              </div>
-
-              <div className="conversation-panel">
-                <div className="conversation-header">
-                  <h4>Conversation</h4>
-                  <span className="content-info">{scrapedData?.chunks_created} chunks available</span>
-                </div>
-                
-                <div className="conversation-messages">
-                  {conversation.length === 0 ? (
-                    <div className="conversation-empty">
-                      <p>Start speaking to begin your conversation about the website content</p>
-                    </div>
-                  ) : (
-                    conversation.map((item) => (
-                      <div key={item.id} className={`conversation-item ${item.type}`}>
-                        <div className="message-content">
-                          {item.type === 'user' && <span className="speaker">You:</span>}
-                          {item.type === 'assistant' && <span className="speaker">AI:</span>}
-                          {item.type === 'system' && <span className="speaker">System:</span>}
-                          <span className="message-text">{item.message}</span>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-                
               </div>
             </div>
           </div>
