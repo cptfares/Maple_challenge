@@ -341,21 +341,6 @@ const VoiceChat = ({ onBack, scrapedData }) => {
       {/* Audio playback element for assistant voice */}
       <div ref={audioRef} style={{ display: 'none' }} className="audio-container"></div>
       
-      {/* Debug info in development */}
-      {process.env.NODE_ENV === 'development' && (
-        <div style={{ 
-          position: 'fixed', 
-          bottom: '10px', 
-          right: '10px', 
-          background: 'rgba(0,0,0,0.8)', 
-          color: 'white', 
-          padding: '5px', 
-          fontSize: '12px',
-          borderRadius: '4px'
-        }}>
-          Status: {connectionStatus} | Listening: {isListening ? 'Yes' : 'No'}
-        </div>
-      )}
     </div>
   );
 };

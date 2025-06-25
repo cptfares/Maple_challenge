@@ -1,3 +1,4 @@
 .env
 vector_store_data_chunks.pkl
 vector_store_data_index.faiss
+node_modules/

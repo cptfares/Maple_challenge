@@ -12,7 +12,7 @@ function ScrapeMode({
   scrapedData,
   scrapedSites,
   setCurrentMode,
-  handleDeleteSite // <-- Add this prop
+  handleDeleteSite
 }) {
   const [selectedSite, setSelectedSite] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -34,25 +34,18 @@ function ScrapeMode({
         <p>Add websites to build your comprehensive knowledge base</p>
       </div>
 
-      {/* Multi-site overview */}
       {(scrapedData || (scrapedSites && scrapedSites.total_sites > 0)) && (
         <div className="mode-selection">
           <h3>Knowledge Base Ready - Choose Interaction Mode:</h3>
           <div className="mode-buttons">
-            <button
-              onClick={() => setCurrentMode('chat')}
-              className="mode-btn chat-btn"
-            >
+            <button onClick={() => setCurrentMode('chat')} className="mode-btn chat-btn">
               <div className="mode-icon">💬</div>
               <div className="mode-content">
-                <h4>Text chat mode </h4>
+                <h4>Text chat mode</h4>
                 <span>Multi-site queries, structure analysis, content discovery</span>
               </div>
             </button>
-            <button
-              onClick={() => setCurrentMode('voice')}
-              className="mode-btn talk-btn"
-            >
+            <button onClick={() => setCurrentMode('voice')} className="mode-btn talk-btn">
               <div className="mode-icon">🎙️</div>
               <div className="mode-content">
                 <h4>Voice chat mode</h4>
@@ -62,6 +55,7 @@ function ScrapeMode({
           </div>
         </div>
       )}
+
       {scrapedSites && scrapedSites.total_sites > 0 && (
         <div className="sites-overview">
           <h3>Active Knowledge Base ({scrapedSites.total_sites} websites)</h3>
@@ -76,13 +70,6 @@ function ScrapeMode({
                 <div className="site-header">
                   <h4>{domain}</h4>
                   <span className="site-status">Active</span>
-                  <button
-                    className="delete-site-btn"
-                    onClick={e => { e.stopPropagation(); handleDeleteSite(domain); }}
-                    title="Delete this site from the knowledge base"
-                  >
-                    Delete
-                  </button>
                 </div>
                 <div className="site-stats">
                   <div className="stat">
@@ -98,11 +85,7 @@ function ScrapeMode({
                     <span className="stat-label">Images</span>
                   </div>
                 </div>
-                <div className="content-types">
-                  {info.structure.content_types.map(type => (
-                    <span key={type} className={`content-type ${type}`}>{type}</span>
-                  ))}
-                </div>
+
               </div>
             ))}
           </div>
@@ -174,34 +157,96 @@ function ScrapeMode({
           )}
         </div>
       )}
+
+      {/* Proper Modal Popup */}
       {showModal && selectedSite && (
-        <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal-content enhanced-modal" onClick={e => e.stopPropagation()}>
-            <button className="close-modal" onClick={closeModal}>×</button>
-            <h2 style={{marginBottom: 8, color: '#2a3b4c'}}>
+        <div
+          className="modal-overlay"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000
+          }}
+          onClick={closeModal}
+        >
+          <div
+            className="modal-content"
+            style={{
+              backgroundColor: 'white',
+              padding: 24,
+              borderRadius: 8,
+              maxWidth: 800,
+              width: '90%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              position: 'relative'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="close-modal"
+              onClick={closeModal}
+              style={{
+                position: 'absolute',
+                top: 12,
+                right: 12,
+                fontSize: 24,
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              ×
+            </button>
+            <h2 style={{ marginBottom: 8, color: '#2a3b4c' }}>
               <span role="img" aria-label="site">🌐</span> {selectedSite.domain}
             </h2>
-            <div className="site-summary" style={{display: 'flex', gap: 32, marginBottom: 16}}>
-              <div style={{minWidth: 120}}>
-                <div style={{fontWeight: 'bold', fontSize: 18, color: '#3a5d7c'}}>Pages</div>
-                <div style={{fontSize: 22, color: '#1e90ff'}}>{selectedSite.info.total_pages}</div>
+            <div className="site-summary" style={{ display: 'flex', gap: 32, marginBottom: 16 }}>
+              <div style={{ minWidth: 120 }}>
+                <div style={{ fontWeight: 'bold', fontSize: 18, color: '#3a5d7c' }}>Pages</div>
+                <div style={{ fontSize: 22, color: '#1e90ff' }}>{selectedSite.info.total_pages}</div>
               </div>
-              <div style={{minWidth: 120}}>
-                <div style={{fontWeight: 'bold', fontSize: 18, color: '#3a5d7c'}}>APIs</div>
-                <div style={{fontSize: 22, color: '#1e90ff'}}>{selectedSite.info.structure.total_api_endpoints}</div>
+              <div style={{ minWidth: 120 }}>
+                <div style={{ fontWeight: 'bold', fontSize: 18, color: '#3a5d7c' }}>APIs</div>
+                <div style={{ fontSize: 22, color: '#1e90ff' }}>{selectedSite.info.structure.total_api_endpoints}</div>
               </div>
-              <div style={{minWidth: 120}}>
-                <div style={{fontWeight: 'bold', fontSize: 18, color: '#3a5d7c'}}>Images</div>
-                <div style={{fontSize: 22, color: '#1e90ff'}}>{selectedSite.info.structure.total_images}</div>
-              </div>
-              <div style={{minWidth: 120}}>
-                <div style={{fontWeight: 'bold', fontSize: 18, color: '#3a5d7c'}}>Types</div>
-                <div style={{fontSize: 16, color: '#555'}}>{selectedSite.info.structure.content_types.join(', ')}</div>
+              <div style={{ minWidth: 120 }}>
+                <div style={{ fontWeight: 'bold', fontSize: 18, color: '#3a5d7c' }}>Images</div>
+                <div style={{ fontSize: 22, color: '#1e90ff' }}>{selectedSite.info.structure.total_images}</div>
               </div>
             </div>
-            <div className="site-map-graph" style={{marginTop: 16}}>
-              <h3 style={{marginBottom: 8, color: '#2a3b4c'}}>Site Map Graph</h3>
+            <div className="site-map-graph" style={{ marginTop: 16 }}>
+              <h3 style={{ marginBottom: 8, color: '#2a3b4c' }}>Site Map Graph</h3>
               <SiteMapGraph sitemap={selectedSite.info.structure.sitemap} />
+            </div>
+
+            {/* Delete Button Inside Modal */}
+            <div style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => {
+                  handleDeleteSite(selectedSite.domain);
+                  closeModal();
+                }}
+                className="delete-site-btn"
+                style={{
+                  backgroundColor: '#e74c3c',
+                  color: 'white',
+                  border: 'none',
+                  padding: '10px 20px',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                  fontWeight: 'bold'
+                }}
+              >
+                Delete Site
+              </button>
             </div>
           </div>
         </div>
