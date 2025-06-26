@@ -202,7 +202,6 @@ function App() {
             clearMessages={clearMessages}
             scrapedSites={scrapedSites}
             selectedDomain={selectedDomain}
-            setSelectedDomain={setSelectedDomain}
             setCurrentMode={setCurrentMode}
             chatMode={chatMode}            // NEW
             setChatMode={setChatMode}      // NEW

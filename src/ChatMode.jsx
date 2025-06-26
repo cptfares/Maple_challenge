@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 
 // Helper to render message content with structure and images
 function renderMessageContent(content) {
@@ -77,6 +77,14 @@ function ChatMode({
   chatMode,
   setChatMode
 }) {
+  const messagesEndRef = useRef(null);
+
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages]);
+
   return (
     <section className="chat-mode">
       <div className="mode-header">
@@ -90,19 +98,7 @@ function ChatMode({
           <h3>Enhanced Knowledge Assistant</h3>
           {scrapedSites && (
             <div className="chat-controls">
-              <div className="domain-selector" style={{ marginBottom: '10px' }}>
-                <label>Focus on:</label>
-                <select 
-                  value={selectedDomain} 
-                  onChange={(e) => setSelectedDomain(e.target.value)}
-                  className="domain-select"
-                >
-                  <option value="all">All websites ({scrapedSites.total_sites})</option>
-                  {Object.keys(scrapedSites.sites).map(domain => (
-                    <option key={domain} value={domain}>{domain}</option>
-                  ))}
-                </select>
-              </div>
+
 
               <div className="chat-toggle-mode">
                 <label style={{ marginRight: 8 }}>Answer about:</label>
@@ -111,8 +107,8 @@ function ChatMode({
                   onChange={(e) => setChatMode(e.target.value)}
                   style={{ padding: '6px', borderRadius: '6px' }}
                 >
-                  <option value="knowledge">  The content </option>
-                  <option value="structure">  The structure</option>
+                  <option value="knowledge">Knowledge Base</option>
+                  <option value="structure">Website Structure</option>
                 </select>
               </div>
             </div>
@@ -152,7 +148,6 @@ function ChatMode({
           ) : (
             messages.map((message, index) => {
               const isUser = message.type === 'user';
-              const isBot = message.type === 'assistant' || message.type === 'bot';
 
               return (
                 <div
@@ -240,6 +235,7 @@ function ChatMode({
               );
             })
           )}
+          <div ref={messagesEndRef} />
         </div>
 
         <form onSubmit={handleChat} className="chat-input-group">

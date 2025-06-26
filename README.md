@@ -1,87 +1,175 @@
+
 # Website Chat & Voice Assistant
 
-A full-stack project that lets you scrape websites, build a knowledge base, and interact with the content using chat or voice. The backend is built with FastAPI (Python), and the frontend uses React (Vite).
+A full-stack AI system that scrapes websites, stores the content in a persistent vector database, and enables users to interact with that content via chat or voice. The platform supports multi-site scraping, site structure analysis, and deep content interaction.
+
+Built with **FastAPI**, **React (Vite)**, **Playwright**, **BeautifulSoup**, **OpenAI**, and **LiveKit**.
+
+---
+
+### Intelligent Web Scraping and Knowledge Aggregation
+ 
+ link: 
 
 ## Features
 
-- **Multi-site Web Scraping:** Add multiple websites to your knowledge base with deep crawling and content chunking.
-- **AI Chat:** Ask questions about the scraped content and get intelligent answers with source references.
-- **Voice Assistant:** Join a LiveKit-powered voice room and interact with the knowledge base using speech.
-- **Structure Analysis:** Query the structure and metadata of your scraped sites (pages, APIs, images, domains, etc.).
-- **Modular Backend:** Clean, maintainable backend code organized in the `backend/` directory with FastAPI routers.
+### Intelligent Web Scraping and Knowledge Aggregation
+
+* **URL-based Input**: Accepts any user-provided URL to initiate scraping.
+* **Recursive Crawling**: Follows internal links to scrape entire websites to a defined depth.
+* **Multi-site Support**: Load multiple websites into a single knowledge base and query them collectively.
+* **Persistent Caching**: Once scraped, content is stored and reused without redundant requests.
+* **Sitemap Awareness**: Extracts and processes sitemaps and page structure metadata.
+* **Support for Dynamic & Static Sites**:
+
+  * **Playwright** for JavaScript-heavy websites and SPAs.
+  * **BeautifulSoup** for fast parsing of static HTML pages.
+* **Non-Text Content Support**: Handles and indexes text, JSON APIs, images, and metadata for broader coverage.
+
+### Embedding and Retrieval
+
+* **Semantic Chunking**: Content is broken into logical text blocks optimized for context relevance (e.g., paragraphs, sections).
+* **Vector Embedding**: Each chunk is embedded using OpenAI embeddings .
+* **Vector Store Integration**: Chunks are indexed in a vector database (FAISS ) for fast and accurate similarity-based retrieval.
+* **Efficient Context Injection**: Only the most relevant chunks are used to generate responses, optimizing LLM performance and cost.
+
+### Natural Interaction Interfaces
+
+* **AI Chat Interface**: Interact with the content in natural language through a web-based chat UI.
+* **Voice Assistant**: Use voice input/output powered by LiveKit for hands-free interactions.
+* **Context-Aware QA**: Responses cite relevant source sections with traceability.
+
+### Advanced Structure and Metadata Queries
+
+* Query structural properties of websites:
+
+  * Number of pages, number of links, internal vs. external domains
+  * List of image assets, scripts, or stylesheets
+  * JSON endpoints, available metadata, sitemap details
+
+## Tech Stack
+
+**Backend**
+
+* FastAPI (Python)
+* Playwright
+* BeautifulSoup
+* FAISS  (vector database)
+* OpenAI (embeddings & LLM API)
+
+**Frontend**
+
+* React (Vite)
+* LiveKit (voice support)
+
+---
 
 ## Prerequisites
 
-- Python 3.11 or higher
-- Node.js and npm
-- A virtual environment manager (recommended)
+* Python 3.11+
+* Node.js and npm
+* OpenAI API key
+* LiveKit API key and secret
+* (Optional) Docker, if using containerized deployment
 
-## Environment Setup
+---
 
-1. Clone the repository:
+## Setup Instructions
+
+### 1. Clone the Repository
+
 ```bash
 git clone https://github.com/cptfares/Maple_challenge
+cd Maple_challenge
 ```
 
-2. Set up Python environment and install dependencies:
-```bash
-# Create and activate a virtual environment
-python -m venv venv
-# On Windows
-.\venv\Scripts\activate
-# On Unix or MacOS
-source venv/bin/activate
+### 2. Backend Setup
 
-# Install Python dependencies
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: .\venv\Scripts\activate
 pip install -e .
 ```
 
-3. Install frontend dependencies:
+### 3. Frontend Setup
+
 ```bash
 npm install
 ```
 
-4. Create a `.env` file in the root directory with the following variables:
+### 4. Create a `.env` File
+
 ```env
 OPENAI_API_KEY=your_openai_api_key
 LIVEKIT_API_KEY=your_livekit_api_key
 LIVEKIT_API_SECRET=your_livekit_api_secret
 ```
 
+---
+
 ## Running the Application
 
-1. **Start the backend server:**
+### Backend
+
 ```bash
-# From the project root, run:
 uvicorn backend.main:app --reload --env-file .env
 ```
 
-2. **In a separate terminal, start the frontend development server:**
+### Frontend
+
 ```bash
 npm run dev
 ```
 
-The application should now be running with:
-- Frontend: http://localhost:5173
-- Backend: http://localhost:8000
+Available locally at:
+
+* Frontend: [http://localhost:5173](http://localhost:5173)
+* Backend: [http://localhost:8000](http://localhost:8000)
+
+---
 
 ## Project Structure
 
 ```
-Maple_challenge_2/
+Maple_challenge/
 │
-├── backend/              # All backend (FastAPI) code
-│   ├── main.py           # FastAPI app entry point
-│   ├── models.py         # Pydantic models
-│   ├── services.py       # Service singletons
-│   ├── routes/           # API routers (scrape, chat, voice)
-│   └── ...               # Other backend modules
+├── backend/              
+│   ├── main.py                     # App entry point
+│   ├── routes/                     # API endpoints: scrape, query, chat, voice
+│   ├── scraping/                  
+│   │   ├── playwright_scraper.py   # Headless browser scraper
+│   │   └── bs_scraper.py           # Static HTML parser
+│   ├── embeddings/                # Chunking, vector store logic
+│   ├── models.py                  
+│   ├── services.py                
+│   └── utils/                     
 │
-├── src/                  # React frontend source code
+├── src/                          # Frontend (React + Vite)
+│   ├── components/               
+│   ├── pages/                    
+│   ├── hooks/                    
 │   └── ...
+│
+├── .env
 ├── package.json
 ├── vite.config.js
-├── README.md
-└── ...
+└── README.md
 ```
 
+---
+
+## Future Extensions
+
+* User accounts and private knowledge bases
+* Site audit summary and content insights
+* Public searchable dashboards of indexed sites
+* Plugin system for actions (summarize, translate, extract tables)
+* Scheduled re-crawling and content updates
+
+
+## Contact
+
+* Email: [anes002@csusm.com](mailto:anes002@csusm.com)
+
+
+-
