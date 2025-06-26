@@ -20,6 +20,7 @@ function App() {
   const [scrapedSites, setScrapedSites] = useState(null);
   const [selectedDomain, setSelectedDomain] = useState('all');
   const [selectedSiteId, setSelectedSiteId] = useState(null);
+  const [chatMode, setChatMode] = useState('knowledge'); // NEW: Manual chat mode toggle
 
   const handleScrape = async (e) => {
     e.preventDefault();
@@ -31,9 +32,7 @@ function App() {
     try {
       const response = await fetch(`${API_BASE}/scrape`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           url: url,
           max_depth: parseInt(maxDepth)
@@ -45,12 +44,12 @@ function App() {
       if (data.success) {
         setScrapeStatus('success');
         setScrapedData(data);
-        
-        // Fetch updated sites info
+
+        // Refresh sites list
         const sitesResponse = await fetch(`${API_BASE}/sites`);
         const sitesData = await sitesResponse.json();
         setScrapedSites(sitesData);
-        setUrl(''); // Clear the input
+        setUrl('');
       } else {
         setScrapeStatus('error');
       }
@@ -68,29 +67,19 @@ function App() {
 
     setIsChatLoading(true);
 
-    const userMessage = { 
-      type: 'user', 
+    const userMessage = {
+      type: 'user',
       content: question,
       timestamp: new Date().toLocaleTimeString()
     };
     setMessages(prev => [...prev, userMessage]);
 
     try {
-      // Check if it's a structure query
-      const isStructureQuery = question.toLowerCase().includes('how many') || 
-                              question.toLowerCase().includes('structure') ||
-                              question.toLowerCase().includes('sitemap') ||
-                              question.toLowerCase().includes('external links') ||
-                              question.toLowerCase().includes('api endpoints') ||
-                              question.toLowerCase().includes('domains');
+      const endpoint = chatMode === 'structure' ? '/query/structure' : '/chat';
 
-      const endpoint = isStructureQuery ? '/query/structure' : '/chat';
-      
       const response = await fetch(`${API_BASE}${endpoint}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           question: question,
           top_k: 5
@@ -129,7 +118,7 @@ function App() {
     }
   };
 
-  // Fetch scraped sites on component mount
+  // Initial fetch of scraped sites
   useEffect(() => {
     const fetchSites = async () => {
       try {
@@ -152,9 +141,11 @@ function App() {
   };
 
   const handleDeleteSite = async (siteId) => {
-    console.log('Attempting to delete site:', siteId);
     try {
-      const response = await fetch(`${API_BASE}/sites/${encodeURIComponent(siteId)}`, { method: 'DELETE' });
+      const response = await fetch(`${API_BASE}/sites/${encodeURIComponent(siteId)}`, {
+        method: 'DELETE'
+      });
+
       if (!response.ok) {
         let errorMsg = 'Unknown error';
         try {
@@ -164,8 +155,9 @@ function App() {
         alert(`Failed to delete site: ${errorMsg}`);
         return;
       }
+
       setSelectedSiteId(null);
-      // Refresh sites list
+
       const sitesResponse = await fetch(`${API_BASE}/sites`);
       const sitesData = await sitesResponse.json();
       setScrapedSites(sitesData);
@@ -197,7 +189,7 @@ function App() {
             scrapedData={scrapedData}
             scrapedSites={scrapedSites}
             setCurrentMode={setCurrentMode}
-            handleDeleteSite={handleDeleteSite} // Pass the function here
+            handleDeleteSite={handleDeleteSite}
           />
         ) : currentMode === 'chat' ? (
           <ChatMode
@@ -212,9 +204,11 @@ function App() {
             selectedDomain={selectedDomain}
             setSelectedDomain={setSelectedDomain}
             setCurrentMode={setCurrentMode}
+            chatMode={chatMode}            // NEW
+            setChatMode={setChatMode}      // NEW
           />
         ) : (
-          <VoiceChat 
+          <VoiceChat
             onBack={() => setCurrentMode('scrape')}
             scrapedData={scrapedData}
           />

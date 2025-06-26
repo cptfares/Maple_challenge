@@ -76,16 +76,3 @@ Please provide a helpful and accurate answer based on the provided context."""
             logger.error(f"Failed to generate answer: {str(e)}")
             raise Exception(f"Answer generation failed: {str(e)}")
     
-    def is_structure_query(self, question: str) -> bool:
-        """
-        Detect if the user's question is about scraped data or structure analysis.
-        Returns True if the question is about number of pages, scraping, structure, etc.
-        """
-        keywords = [
-            'how many pages', 'pages have you scraped', 'scraped pages',
-            'structure analysis', 'site structure', 'scraped data',
-            'how many sites', 'how many domains', 'internal links', 'external links',
-            'api endpoints', 'images', 'content types', 'structure info', 'structure information'
-        ]
-        q = question.lower()
-        return any(kw in q for kw in keywords)

@@ -4,6 +4,7 @@ Chat endpoints for answering questions based on website content.
 from fastapi import APIRouter, HTTPException
 from backend.models import ChatRequest, ChatResponse
 from backend.services import embedding_service, vector_store, chat_service
+from backend.services import scraper
 import logging
 
 router = APIRouter()
@@ -46,16 +47,35 @@ async def chat_with_content(request: ChatRequest):
 async def query_structure(request: ChatRequest):
     """Answer questions about website structure and metadata."""
     try:
-        scraped_sites = vector_store.get_structure_info()  # or use a service if needed
-        structure_info = vector_store.get_structure_info()
-        context = f"""Structure Information:\nTotal content chunks: {structure_info.get('total_chunks', 0)}\nContent types: {', '.join(structure_info.get('content_types', {}).keys())}\nDomains: {', '.join(structure_info.get('domains', {}).keys())}\n"""
-        # Add more details as needed
-        answer = await chat_service.generate_answer(request.question, [{'text': context, 'url': 'structure_info'}])
+        structure_info = scraper.get_all_scraped_sites()
+
+        if not structure_info or not structure_info.get("sites"):
+            raise ValueError("No site structure data available")
+
+        context_lines = ["Structure Overview:"]
+        context_lines.append(f"Total sites: {structure_info.get('total_sites', 0)}")
+
+        for domain, info in structure_info["sites"].items():
+            structure = info.get("structure", {})
+            context_lines.append(f"\n--- {domain} ---")
+            context_lines.append(f"Pages: {info.get('total_pages', 0)}")
+            context_lines.append(f"Images: {structure.get('total_images', 0)}")
+            context_lines.append(f"API endpoints: {structure.get('total_api_endpoints', 0)}")
+            context_lines.append(f"Sitemap nodes: {len(structure.get('sitemap', []))}")
+
+        context = "\n".join(context_lines)
+
+        answer = await chat_service.generate_answer(
+            request.question,
+            [{'text': context, 'url': 'structure_summary'}]
+        )
+
         return ChatResponse(
             success=True,
             answer=answer,
-            sources=["Structure Analysis"]
+            sources=["Structure Overview"]
         )
+
     except Exception as e:
-        logger.error(f"Error during structure query: {str(e)}")
+        logger.error(f"Structure query failed: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Structure query failed: {str(e)}")

@@ -5,7 +5,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 class TextChunker:
-    def __init__(self, max_tokens: int = 500, overlap_tokens: int = 50):
+    def __init__(self, max_tokens: int = 5000, overlap_tokens: int = 50):
         """
         Initialize the text chunker.
         

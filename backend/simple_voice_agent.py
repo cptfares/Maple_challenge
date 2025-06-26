@@ -33,7 +33,7 @@ if embedding_service is None:
 
 logger = logging.getLogger(__name__)
 
-async def get_website_context(question: str, top_k: int = 3):
+async def get_website_context(question: str, top_k: int = 5):
     # Always reload the vector store from disk to get the latest data
     global vector_store
     vector_store.load_from_disk(VECTOR_STORE_PATH_PREFIX)
@@ -99,12 +99,24 @@ async def entrypoint(ctx: JobContext):
             logger.info(f"Tool {t.__name__} doc: {t.__doc__}")
         agent = Agent(
             instructions=(
-                "You are a friendly, helpful, and polite voice assistant. "
-                "Always greet the user and be nice. "
-                "For EVERY user question, you MUST use the lookup_website_content tool to retrieve the answer. "
-                "If the answer is not in the website content, politely say you don't know or that the information is not available. "
-                "Do not make up information or hallucinate."
-            ),
+                "You are a friendly, helpful, and polite voice assistant for a website analysis tool.\n"
+                "Your job is to help users understand the content of a website they have scraped.\n"
+                "\n"
+                "Behavior:\n"
+                "- Greet the user only at the **start** of the conversation.\n"
+                "- For **every** user question, call the `lookup_website_content` tool.\n"
+                "- After calling the tool, use the returned content to answer the user's question clearly and concisely.\n"
+                "- If the tool returns no relevant content or says it's unavailable, respond politely and explain that the answer wasn't found.\n"
+                "- Do **not** make up information. Only respond using what was returned from the website content.\n"
+                "\n"
+                "Tone:\n"
+                "- Be friendly and easy to understand.\n"
+                "- Avoid repeating greetings.\n"
+                "- Avoid long-winded answers. Be concise, but informative.\n"
+                "\n"
+                "Never say anything that wasn't based on the tool result.\n"
+                "If the answer is unclear, ask the user to rephrase or clarify."
+                        ),
             tools=tool_list,
         )
         session = AgentSession(
