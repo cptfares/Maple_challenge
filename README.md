@@ -7,7 +7,7 @@ Built with **FastAPI**, **React (Vite)**, **Playwright**, **BeautifulSoup**, **O
 
 ---
 
-### Intelligent Web Scraping and Knowledge Aggregation
+### DEMO:
  
  link: 
 
