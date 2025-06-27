@@ -46,7 +46,30 @@ Watch the working demo on YouTube: [https://www.youtube.com/watch?v=yMpEgv_Rjjo(
   * JSON endpoints, available metadata, sitemap details
 
 ---
+## Development Focus & Thought Process
 
+This project was developed in focused, iterative phases to ensure each major component was both performant and extensible:
+
+1. **Scraping & Embedding First**
+   The core priority was building a reliable content ingestion pipeline using **Playwright** for dynamic sites and **BeautifulSoup** for static HTML. Once scraped, content is chunked and embedded using **OpenAI embeddings**, then stored in a **FAISS** vector database for fast semantic search.
+
+2. **Fast and Relevant Chat Responses**
+   Before expanding features, effort was made to ensure chat responses were both **accurate** and **low-latency**, by retrieving only the most relevant chunks from the vector store and injecting context efficiently into LLM prompts.
+
+3. **Support for Multiple Knowledge Sources**
+   Users can now load multiple websites into a **shared or unified knowledge base**, and query across them seamlessly. Additionally, support was added to **dynamically add or remove sites**, allowing for real-time management of the indexed content without restarting the app or reloading the entire system.
+
+4. **Voice Assistant Integration**
+   Once the core knowledge and chat system was stable, a voice assistant layer was added using **LiveKit**. This involved handling session setup delays, speech-to-text transcription, and synchronized audio output for full hands-free interaction.
+
+5. **Structure Analysis Capabilities**
+   With both chat and voice interfaces in place, development returned to **website structure analysis**, enabling the assistant to answer questions about:
+
+   * Number of pages, links, and assets
+   * Sitemap hierarchy
+   * Metadata coverage
+   * API endpoints and content types
+---
 ## Tech Stack
 
 **Backend**
