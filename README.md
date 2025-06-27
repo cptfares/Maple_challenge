@@ -5,7 +5,7 @@ A full-stack AI system that scrapes websites, stores the content in a persistent
 Built with **FastAPI**, **React (Vite)**, **Playwright**, **BeautifulSoup**, **OpenAI**, and **LiveKit**.
 
 **🎥 DEMO**:
-Watch the working demo on YouTube: [https://www.youtube.com/watch?v=yMpEgv\_Rjjo](https://www.youtube.com/watch?v=yMpEgv_Rjjo)
+Watch the working demo on YouTube: [https://www.youtube.com/watch?v=yMpEgv_Rjjo(https://www.youtube.com/watch?v=yMpEgv_Rjjo
 
 ---
 
@@ -130,32 +130,47 @@ Available locally at:
 ## Project Structure
 
 ```
-Maple_challenge/
+MAPLE_CHALLENGE/
 │
 ├── backend/              
-│   ├── main.py                     # App entry point
-│   ├── routes/                     # API endpoints: scrape, query, chat, voice
-│   ├── scraping/                  
-│   │   ├── playwright_scraper.py   # Headless browser scraper
-│   │   └── bs_scraper.py           # Static HTML parser
-│   ├── embeddings/                # Chunking, vector store logic
-│   ├── models.py                  
-│   ├── services.py                
-│   └── utils/                     
+│   ├── __pycache__/
+│   ├── routes/
+│   │   └── __init__.py
+│   ├── chat_service.py
+│   ├── chunker.py
+│   ├── embeddings.py
+│   ├── enhanced_scraper.py
+│   ├── livekit_service.py
+│   ├── main.py
+│   ├── models.py
+│   ├── services.py
+│   ├── simple_voice_agent.py
+│   ├── suppress_asyncio_tracebacks.py
+│   └── vector_store.py
 │
 ├── src/                          # Frontend (React + Vite)
-│   ├── components/               
-│   ├── pages/                    
-│   ├── hooks/                    
-│   └── ...
+│   ├── App.jsx
+│   ├── ChatMode.jsx
+│   ├── Header.jsx
+│   ├── ScrapeMode.jsx
+│   ├── SiteDetails.jsx
+│   ├── SiteMapGraph.jsx
+│   ├── VoiceChat.jsx
+│   ├── main.jsx
+│   └── index.css
 │
 ├── .env
+├── .gitignore
+├── index.html
 ├── package.json
-├── vite.config.js
 ├── package-lock.json
 ├── pyproject.toml
-├── index.html
-└── README.md
+├── README.md
+├── uv.lock
+├── vector_store_data_chunks.pkl
+├── vector_store_data_index.faiss
+└── vite.config.js
+
 ```
 
 ---
