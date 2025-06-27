@@ -173,9 +173,9 @@ Maple_challenge/
 
 ## Future Extensions
 
+* Agent mode : interact with website ( e.g fill up forms , search contact...)
 * User accounts and private knowledge bases
 * Site audit summary and content insights
-* Public searchable dashboards of indexed sites
 * Plugin system for actions (summarize, translate, extract tables)
 * Scheduled re-crawling and content updates
 
