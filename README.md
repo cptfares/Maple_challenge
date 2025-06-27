@@ -70,7 +70,6 @@ Watch the working demo on YouTube: [https://www.youtube.com/watch?v=yMpEgv\_Rjjo
 * Node.js and npm
 * OpenAI API key
 * LiveKit API key and secret
-* (Optional) Docker, if using containerized deployment
 
 ---
 
@@ -153,6 +152,9 @@ Maple_challenge/
 ├── .env
 ├── package.json
 ├── vite.config.js
+├── package-lock.json
+├── pyproject.toml
+├── index.html
 └── README.md
 ```
 
