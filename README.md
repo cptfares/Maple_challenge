@@ -67,7 +67,6 @@ This project was developed in focused, iterative phases to ensure each major com
 
    * Number of pages, links, and assets
    * Sitemap hierarchy
-   * Metadata coverage
    * API endpoints and content types
 ---
 ## Tech Stack
