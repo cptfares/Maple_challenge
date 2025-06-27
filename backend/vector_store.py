@@ -53,7 +53,7 @@ class VectorStore:
         
         logger.info(f"Added {len(embeddings)} embeddings to vector store. Total: {len(self.chunks)}")
     
-    def search(self, query_embedding: List[float], top_k: int = 5, content_type_filter: str = None, domain_filter: str = None) -> List[Dict[str, Any]]:
+    def search(self, query_embedding: List[float], top_k: int = 10, content_type_filter: str = None, domain_filter: str = None) -> List[Dict[str, Any]]:
         """
         Search for similar chunks with enhanced filtering options.
         

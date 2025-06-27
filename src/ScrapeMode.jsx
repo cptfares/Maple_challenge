@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import SiteMapGraph from './SiteMapGraph';
 
 function ScrapeMode({
   url,
