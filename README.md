@@ -1,4 +1,6 @@
 
+
+````markdown
 # Website Chat & Voice Assistant
 
 A full-stack AI system that scrapes websites, stores the content in a persistent vector database, and enables users to interact with that content via chat or voice. The platform supports multi-site scraping, site structure analysis, and deep content interaction.
@@ -7,9 +9,11 @@ Built with **FastAPI**, **React (Vite)**, **Playwright**, **BeautifulSoup**, **O
 
 ---
 
-### DEMO:
- 
- link: 
+### 🎥 DEMO
+
+Watch the working demo on YouTube: [https://www.youtube.com/watch?v=yMpEgv_Rjjo](https://www.youtube.com/watch?v=yMpEgv_Rjjo)
+
+---
 
 ## Features
 
@@ -21,7 +25,6 @@ Built with **FastAPI**, **React (Vite)**, **Playwright**, **BeautifulSoup**, **O
 * **Persistent Caching**: Once scraped, content is stored and reused without redundant requests.
 * **Sitemap Awareness**: Extracts and processes sitemaps and page structure metadata.
 * **Support for Dynamic & Static Sites**:
-
   * **Playwright** for JavaScript-heavy websites and SPAs.
   * **BeautifulSoup** for fast parsing of static HTML pages.
 * **Non-Text Content Support**: Handles and indexes text, JSON APIs, images, and metadata for broader coverage.
@@ -29,8 +32,8 @@ Built with **FastAPI**, **React (Vite)**, **Playwright**, **BeautifulSoup**, **O
 ### Embedding and Retrieval
 
 * **Semantic Chunking**: Content is broken into logical text blocks optimized for context relevance (e.g., paragraphs, sections).
-* **Vector Embedding**: Each chunk is embedded using OpenAI embeddings .
-* **Vector Store Integration**: Chunks are indexed in a vector database (FAISS ) for fast and accurate similarity-based retrieval.
+* **Vector Embedding**: Each chunk is embedded using OpenAI embeddings.
+* **Vector Store Integration**: Chunks are indexed in a vector database (FAISS) for fast and accurate similarity-based retrieval.
 * **Efficient Context Injection**: Only the most relevant chunks are used to generate responses, optimizing LLM performance and cost.
 
 ### Natural Interaction Interfaces
@@ -42,10 +45,11 @@ Built with **FastAPI**, **React (Vite)**, **Playwright**, **BeautifulSoup**, **O
 ### Advanced Structure and Metadata Queries
 
 * Query structural properties of websites:
-
   * Number of pages, number of links, internal vs. external domains
   * List of image assets, scripts, or stylesheets
   * JSON endpoints, available metadata, sitemap details
+
+---
 
 ## Tech Stack
 
@@ -54,7 +58,7 @@ Built with **FastAPI**, **React (Vite)**, **Playwright**, **BeautifulSoup**, **O
 * FastAPI (Python)
 * Playwright
 * BeautifulSoup
-* FAISS  (vector database)
+* FAISS (vector database)
 * OpenAI (embeddings & LLM API)
 
 **Frontend**
@@ -81,7 +85,7 @@ Built with **FastAPI**, **React (Vite)**, **Playwright**, **BeautifulSoup**, **O
 ```bash
 git clone https://github.com/cptfares/Maple_challenge
 cd Maple_challenge
-```
+````
 
 ### 2. Backend Setup
 
@@ -158,6 +162,17 @@ Maple_challenge/
 
 ---
 
+## Known Issues & Limitations
+
+* **Voice Agent Delay**: The voice assistant may not respond to the first input due to LiveKit session initiation latency.
+* **No Real-Time Transcription Feedback**: Speech recognition feedback is not displayed, making UX unclear during voice input.
+* **Partial Site Coverage**: Some SPAs with complex JS loading may still not fully render or get scraped, even with Playwright.
+* **Chat Context Reset on Refresh**: Currently, chat history is not persisted between sessions or refreshes.
+* **Manual Toggle for Query Type**: Instead of automatic content vs. structure query detection, a manual toggle is used.
+* **No Authentication Layer Yet**: All users share the same session scope and knowledge base context.
+
+---
+
 ## Future Extensions
 
 * User accounts and private knowledge bases
@@ -166,10 +181,10 @@ Maple_challenge/
 * Plugin system for actions (summarize, translate, extract tables)
 * Scheduled re-crawling and content updates
 
+---
 
 ## Contact
 
 * Email: [anes002@csusm.com](mailto:anes002@csusm.com)
 
 
--
