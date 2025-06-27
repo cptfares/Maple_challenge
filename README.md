@@ -176,7 +176,6 @@ MAPLE_CHALLENGE/
 │   ├── Header.jsx
 │   ├── ScrapeMode.jsx
 │   ├── SiteDetails.jsx
-│   ├── SiteMapGraph.jsx
 │   ├── VoiceChat.jsx
 │   ├── main.jsx
 │   └── index.css
