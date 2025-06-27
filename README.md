@@ -1,17 +1,11 @@
-
-
-````markdown
 # Website Chat & Voice Assistant
 
 A full-stack AI system that scrapes websites, stores the content in a persistent vector database, and enables users to interact with that content via chat or voice. The platform supports multi-site scraping, site structure analysis, and deep content interaction.
 
 Built with **FastAPI**, **React (Vite)**, **Playwright**, **BeautifulSoup**, **OpenAI**, and **LiveKit**.
 
----
-
-### 🎥 DEMO
-
-Watch the working demo on YouTube: [https://www.youtube.com/watch?v=yMpEgv_Rjjo](https://www.youtube.com/watch?v=yMpEgv_Rjjo)
+**🎥 DEMO**:
+Watch the working demo on YouTube: [https://www.youtube.com/watch?v=yMpEgv\_Rjjo](https://www.youtube.com/watch?v=yMpEgv_Rjjo)
 
 ---
 
@@ -25,6 +19,7 @@ Watch the working demo on YouTube: [https://www.youtube.com/watch?v=yMpEgv_Rjjo]
 * **Persistent Caching**: Once scraped, content is stored and reused without redundant requests.
 * **Sitemap Awareness**: Extracts and processes sitemaps and page structure metadata.
 * **Support for Dynamic & Static Sites**:
+
   * **Playwright** for JavaScript-heavy websites and SPAs.
   * **BeautifulSoup** for fast parsing of static HTML pages.
 * **Non-Text Content Support**: Handles and indexes text, JSON APIs, images, and metadata for broader coverage.
@@ -45,6 +40,7 @@ Watch the working demo on YouTube: [https://www.youtube.com/watch?v=yMpEgv_Rjjo]
 ### Advanced Structure and Metadata Queries
 
 * Query structural properties of websites:
+
   * Number of pages, number of links, internal vs. external domains
   * List of image assets, scripts, or stylesheets
   * JSON endpoints, available metadata, sitemap details
@@ -85,7 +81,7 @@ Watch the working demo on YouTube: [https://www.youtube.com/watch?v=yMpEgv_Rjjo]
 ```bash
 git clone https://github.com/cptfares/Maple_challenge
 cd Maple_challenge
-````
+```
 
 ### 2. Backend Setup
 
@@ -186,5 +182,4 @@ Maple_challenge/
 ## Contact
 
 * Email: [anes002@csusm.com](mailto:anes002@csusm.com)
-
 
