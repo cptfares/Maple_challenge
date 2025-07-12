@@ -223,7 +223,6 @@ function ScrapeMode({
             </div>
             <div className="site-map-graph" style={{ marginTop: 16 }}>
               <h3 style={{ marginBottom: 8, color: '#2a3b4c' }}>Site Map Graph</h3>
-              <SiteMapGraph sitemap={selectedSite.info.structure.sitemap} />
             </div>
 
             {/* Delete Button Inside Modal */}
