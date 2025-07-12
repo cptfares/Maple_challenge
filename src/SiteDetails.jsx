@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 
+const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+
 function SiteDetails({ siteId, onBack, onDelete }) {
   const [site, setSite] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`/api/sites/${encodeURIComponent(siteId)}`)
+    fetch(`${API_BASE}/api/sites/${encodeURIComponent(siteId)}`)
       .then(res => {
         if (!res.ok) throw new Error('Not found');
         return res.json();
@@ -29,7 +31,9 @@ function SiteDetails({ siteId, onBack, onDelete }) {
       <h2>{site.domain || siteId}</h2>
       <button onClick={() => onDelete(siteId)}>Delete from Knowledge Base</button>
       <h3>Sitemap Graph</h3>
-      <pre style={{maxHeight: 300, overflow: 'auto'}}>{JSON.stringify(site.sitemap, null, 2)}</pre>
+      <pre style={{ maxHeight: 300, overflow: 'auto' }}>
+        {JSON.stringify(site.sitemap, null, 2)}
+      </pre>
     </div>
   );
 }
