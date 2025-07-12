@@ -5,7 +5,7 @@ import ChatMode from './ChatMode.jsx';
 import VoiceChat from './VoiceChat.jsx';
 import SiteDetails from './SiteDetails.jsx';
 
-const API_BASE = '/api';
+const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 
 function App() {
   const [url, setUrl] = useState('');
