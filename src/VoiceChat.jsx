@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Room, createLocalTracks, Track } from 'livekit-client';
 
-const API_BASE = '/api';
+const API_BASE = 'const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';';
 
 const VoiceChat = ({ onBack, scrapedData }) => {
   const [isConnected, setIsConnected] = useState(false);
